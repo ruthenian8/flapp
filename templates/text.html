@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div id="textwrap">
+	<p id="kws" class="metatext">Ключевые слова: {{ kwords }}</p>
+	<div id="maintext">
+		<p>Текст записи:</p>	
+		<p id="textp">{{ text }}</p>
+	</div>
+	<p id="year" class="metatext">Год записи: {{ year }}</p>
+	<p id="infs" class="metatext">Информанты: {{ informs }}</p>	
+</div>
+{% endblock %}

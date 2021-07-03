@@ -1,0 +1,267 @@
+#srcdiv {
+	width: 100%;
+	margin: 0px;
+	display: block;
+	background-color: #B0C4DE;
+}
+#formdiv {
+	position: relative;
+	align-content: center;
+	padding: 10px;
+	display: block;
+	margin: 5%;
+	margin-top: 10px;
+	margin-bottom: 10px;
+	background-color: inherit;
+	padding-bottom: 2.5rem;
+}
+
+/* tip section */
+.tip {
+	position: absolute;
+	bottom: 3px;
+	right: 3px;
+	background-color: inherit;
+	border: solid white;
+	border-width: 1.5px;
+	border-radius: 50%;
+	height: 1.4rem;
+	width: 1.4rem;
+	text-align: center;
+}
+.tip::before {
+	content: "?";
+	color: white;
+	font-family: 'Jost', sans-serif;
+	font-size: 1.1rem;
+}
+.tip::after {
+	position: absolute;
+	left: -200px;
+	margin-left: auto;
+	margin-right: auto;
+	font-size: 0.9rem;
+	white-space: pre-wrap;
+	content: "...";
+	display: none;
+	background-color: #4682B4;
+	color: white;
+	text-align: left;
+	padding: 1.2rem;
+	z-index: 100;
+}
+.FT-tip {
+	top: 3px;
+	bottom: unset;
+}
+#FTtip:focus::after, #FTtip:active::after, #FTtip:hover::after {
+	content: "Введите слово для поиска. При поиске нескольких слов ставьте перед каждым знак плюс:\A+корова +бык";
+	display: block;
+}
+#idtip:focus::after, #FTtip:active::after, #idtip:hover::after {
+	content: "Введите идентификатор записи в базе данных.";
+	display: block;
+}
+#kwtip:focus::after, #FTtip:active::after, #kwtip:hover::after {
+	content: "Введите ключевые слова, выбирая из подсказок.";
+	display: block;
+}
+#qltip:focus::after, #FTtip:active::after, #qltip:hover::after {
+	content: "Введите программу-опросник";
+	display: block;
+}
+#qtip:focus::after, #FTtip:active::after, #qtip:hover::after {
+	content: "Перед выбором вопроса выберите программу-опросник";
+	display: block;
+}
+#ytip:focus::after, #FTtip:active::after, #ytip:hover::after {
+	content: "Введите год записи данных";
+	display: block;
+}
+#raytip:focus::after, #FTtip:active::after, #raytip:hover::after {
+	content: "Введите район для поиска";
+	display: block;
+}
+#VTtip:focus::after, #FTtip:active::after, #VTtip:hover::after {
+	content: "Перед выбором места записи текста выберите район";
+	display: block;
+}
+#VItip:focus::after, #FTtip:active::after, #VItip:hover::after {
+	content: "Перед выбором места жительства информанта выберите район";
+	display: block;
+}
+
+/* FT section */
+#FTdiv {
+	position: relative;
+	padding-bottom: 1.5rem;
+	margin-bottom: 10px;
+}
+#FTlabel {
+	text-align: left;
+	height: 1.4rem;
+	display: block;
+	font-size: 1.1rem;
+	font-family: 'Jost', sans-serif;
+	width: 75%;
+	margin-top: 10px;
+	margin-bottom: 10px;
+	color: white;
+}
+#FTsearch {
+	align-self: center;
+	width: 75%;
+	display: block;
+	height: 1.5rem;
+	font-size: 1.2rem;
+	margin-top: 10px;
+	margin-bottom: 20px;
+}
+#FTbutton {
+	position: absolute;
+	display: inline;
+	bottom: 0px;
+	right: 0px;
+}
+
+/* FT section */
+#boxdiv {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+}
+.inpwrap {
+	align-self: flex-start;
+	height: 8rem;
+	position: relative;
+	flex: 22vw;
+	margin: 5px;
+}
+@media only screen and (max-width: 900px) {
+	.inpwrap {
+		flex: 35vw;
+	}
+}
+@media only screen and (max-width: 600px) {
+	.inpwrap {
+		flex: 60vw;
+	}
+}
+
+.button {
+	appearance: none;
+	-moz-appearance: none;
+	-webkit-appearance: none;
+	background-color: #B0C4DE;
+	color: white;
+	border: solid white;
+	border-width: 1.5px;
+	border-radius: 7%;
+	height: 1.8rem !important;
+	font-size: 1.1rem;
+	font-family: 'Jost', sans-serif;
+	padding: 2px;
+}
+.srcbtn {
+	position: absolute;
+	bottom: 3px;
+	left: 3px;
+}
+.inpbox {
+	background-color: white;
+	margin-bottom: 10px;
+	height: 60%;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	padding: 4px;
+	color: grey;
+	border-color: black !important;
+	border-width: 2px  !important;
+	border-radius: 5%;			
+}
+.annot {
+	display: block;
+	margin-top: 0px;
+	font-family: sans-serif;
+}
+
+/*popup section*/
+
+.popup {
+	display: none;
+	top: 5%;
+	left: 0;
+	right: 0;
+	position: absolute;
+	width: 90%;
+	z-index: 100;
+	margin-left: auto;
+	margin-right: auto;
+	background-color: white;
+}
+.closebtn {
+	appearance: none;
+	-moz-appearance: none;
+	-webkit-appearance: none;
+	border: 0px;	
+	position: absolute;
+	top: 3px;
+	right: 3px;
+	color: white;
+	background-color: #B0C4DE;
+	font-size: 1.1rem;
+	font-weight: bold;
+}
+.formwrap {
+	width: 90%;
+	margin: 5%;
+}
+
+.plabel {
+	font-size: 1.1rem;
+	font-weight: bold;
+	font-family: 'Jost', sans-serif;
+	color: #B0C4DE;
+}
+.pform {
+	display: block;
+}
+
+#overlay {
+	background-color: rgba(0,0,0,0.8);
+	display: none;
+	position: absolute;
+	height: 300vh;
+	width: 100%;
+	top: 0;
+	left: 0;
+	z-index: 99;
+	transition: all 0.5s;
+	-webkit-transition: all 0.5s;
+	-moz-transition: all 0.5s;	
+}
+/* commit button section */
+#commitbts {
+	position: absolute;
+	bottom: 4px;
+	right: 10px;
+}
+.firebtn {
+	margin: 4px;
+}
+
+/* result section */
+#resultdiv {
+	width: 100%;
+	border-radius: 7%;
+	background-color: white;
+}
+
+select {
+	width: 80%;
+}

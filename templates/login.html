@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div>
+	<h2 id="authtitle">Аутентификация</h2>
+	<form action="{{prefix}}/login" method="POST">
+		<label for="username">Логин</label>
+		<input class="loginfield" type="text" id="username" name="username" placeholder="user1">
+		<label for="password">Пароль</label>
+		<input class="loginfield" type="password" id="password" name="password" placeholder="***">
+		<button class="loginfield" type="submit">Войти</button>
+	</form>
+	<div id="message">
+		<p>{{message}}</p>
+	</div>
+</div>
+{% endblock %}
