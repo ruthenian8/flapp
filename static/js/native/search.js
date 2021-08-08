@@ -1,268 +1,144 @@
-const host = "http://" + String(window.location.host);
-const field2box = {
-	"idfield":"idbox",
-	"kwfield":"kwbox",
-	"qlfield":"qlbox",
-	"qfield":"qbox",
-	"yfield":"ybox",
-	"rayfield":"raybox",
-	"VTfield":"VTbox",
-	"VIfield":"VIbox"
-}
-
-const full2pop = {
-	"idfull":{
-		"pop":"idpop",
-		"field":"idfield",
-		"uri":null
+const host = "http://" + window.location.host;
+const selectParamsToEndpoint = {
+	"#yfield":{
+		"endpoint":"/api/yrs",
+		"result":[]
 	},
-	"kwfull":{
-		"pop":"kwpop",
-		"field":"kwfield",
-		"uri":"/api/kws"
+	"#inffield":{
+		"endpoint":"/api/infs",
+		"result":[]
 	},
-	"qlfull":{
-		"pop":"qlpop",
-		"field":"qlfield",
-		"uri":"/api/prs"
+	"#qlfield":{
+		"endpoint":"/api/prs",
+		"result":[]
 	},
-	"qfull":{
-		"pop":"qpop",
-		"field":"qfield",
-		"uri":"/api/qlist",
-		"parent":"qlfield"
+	"#qfield":{
+		"endpoint":"/api/quests",
+		"result":[]
 	},
-	"yfull":{
-		"pop":"ypop",
-		"field":"yfield",
-		"uri":"/api/yrs"
+	"#rayfield":{
+		"endpoint":"/api/rays",
+		"result":[]
 	},
-	"rayfull":{
-		"pop":"raypop",
-		"field":"rayfield",
-		"uri":"/api/rays"
+	"#VTfield":{
+		"endpoint":"/api/rvt",
+		"result":[]
 	},
-	"VTfull":{
-		"pop":"vilpop",
-		"field":"VTfield",
-		"uri":"/api/rvt",
-		"parent":"rayfield"
+	"#VIfield":{
+		"endpoint":"/api/rvi",
+		"result":[]
 	},
-	"VIfull":{
-		"pop":"vilinfpop",
-		"field":"VIfield",
-		"uri":"/api/rvi",
-		"parent":"rayfield"
+	"#kwfield":{
+		"endpoint":"/api/kws",
+		"result":[]
 	}
 }
 
-async function process_json(data) {
-	let reader, chunks, recordLen, numrepr, result, position, jsonrepr;
-	reader = data.getReader();
-	chunks = [];
-	recordLen = 0;
-	while (true) {
-		const {done, value} = await reader.read();
-		if (done) {
-			break;
-		}
-		chunks.push(value);
-		recordLen += value.length;
+const childParamsToParent = {
+	"#qlfield": {
+		"endpoint":"/api/qlist/",
+		"child":"#qfield",
+		"result":[]
+	},
+	"#rayfield": {
+		"endpoint":"/api/rvt/",
+		"child":"#VTfield",
+		"result":[]
 	}
-	numrepr = new Uint8Array(recordLen);
-	position = 0;
-	for (let chunk of chunks) {
-		numrepr.set(chunk, position);
-		position += chunk.length;
-	}
-	result = new TextDecoder("utf-8").decode(numrepr);
-	jsonrepr = JSON.parse(result);
-	return jsonrepr;
+	// "#VIfield": {
+	// 	"endpoint":"/api/rvi/",
+	// 	"parent":"#rayfield",
+	// 	"result":[]
+	// }
 }
 
-// async function attachIndex() {
-// 	let data, ftIndex;
-// 	await fetch(`${host}/search/index`)
-// 	.then(response => {data = response.body;})
-// 	.catch(err => {
-// 		console.log("Failed to fetch data");
-// 		console.log(err);
-// 		return;
-// 	});
-// 	ftIndex = await process_json(data);
-// 	if (!lunr) {
-// 		console.log("No lunr detected");
-// 	}
-// 	document.idx = lunr.Index.load(ftIndex);
-// }
-
-function indexSearch(event) {
-	let FTvalue, FTresults;
-	event.preventDefault();
-	if (!lunr || !document.idx) {
-		return;
-	};
-	FTvalue = $( "#FTsearch" ).val();
-	if (FTvalue == "") {
-		alert("Введите слово для поиска");
-		return;
+async function loadInitial(host) {
+	const urls = [];
+	for (let key in selectParamsToEndpoint) {
+		selectParamsToEndpoint[key]["promise"] = fetch(host + selectParamsToEndpoint[key]["endpoint"])
+		.catch(err => this.onLoadError(err))
+		.then(res => res.json())
+		.then(data =>  {selectParamsToEndpoint[key]["result"] = data})
 	}
-	FTresults = document.idx.search(FTvalue);
-	document.FTids = FTresults.map(
-		(item) => {return item["ref"]}
-	);
-}
-
-function closePopups(event) {
-	event.preventDefault();
-	let pops = Array.from($( ".popup" ));
-	for (let pop of pops) {
-		pop.style.display = "none";
-	};
-	$( "#overlay" ).css("display", "none");
-}
-
-function expandSelection(event) {
-	event.preventDefault();
-	let fullId, namespace, popId, optsUri, updUri;
-	fullId = event.target.id;
-	if (!full2pop) {
-		console.log("error: no namespace dictionary");
-		return;
+	await Promise.allSettled(Object.values(selectParamsToEndpoint).map(item => item["promise"]));
+	// initiate callback when options are downloaded
+	for (let key in selectParamsToEndpoint) {
+		setField(key, selectParamsToEndpoint[key]);
 	}
-	namespace = full2pop[fullId];
-	popId = namespace["pop"];
-
-	// a check not to expand child-selects before the parents are selected
-	optsUri = host + namespace["uri"];
-	updUri = parentCheck(namespace, optsUri);
-	if (updUri === false) { return; }
-
-	$( "#overlay" ).css("display", "block");
-	$( `#${popId}` ).css("display", "block");
 }
 
-function setOpts(event) {
-	event.preventDefault();
-	let fullId, namespace, fieldId, optsUri, updUri;
-	fullId = event.target.id;
-	// return if setting options is not required
-	if (fullId == "idfull") { return; };
-	// return if the namespace object is not visible
-	if (!full2pop) { return; };
-	namespace = full2pop[fullId];
-	fieldId = namespace["field"];
-	// return if options have already been set
-	if ( $( `#${fieldId}` ).children().length > 1 ) { return; };
-	// proceed to downloading after the checks
-	optsUri = host + namespace["uri"];
-
-	// a check not to open child-selects before the parents are selected
-	updUri = parentCheck(namespace, optsUri);
-	if (updUri === false) {
-		alert("Перед выбором вопроса или населённого пункта выберите опросник или район соответственно.");
-		return;
-	}
-	optsLogic(fieldId, updUri);
+async function loadRelated(host, parameter, targetObj) {
+	let url = host + targetObj["endpoint"] + parameter;
+	await fetch(url).catch(err => console.log(err)).then(res => res.json()).then(data => targetObj["result"] = data);
+	return targetObj;
 }
 
-function parentCheck(namespace, optsUri) {
-	let parentId, parentVal;
-	if (namespace.hasOwnProperty("parent")) {
-		parentId = namespace["parent"];
-		parentVal = $( `#${parentId} input:checked` ).val();
-		if ( !parentVal ) {
-			return false;
-		} else {
-			optsUri += `/${parentVal}`;
-			return optsUri
-		}
-	}
-	return optsUri;
-}
-
-function optsLogic(fieldId, optsUri) {
-	var data, content, targetField;
-	(async function download() {
-		let respBody;
-		await fetch(optsUri)
-		.then(response => {respBody = response.body;})
-		.catch((err) => {
-			console.log('failed to fetch')
-			console.log(err);
-			return;
-		});
-		content = await process_json(respBody);
-	})().then(resp => {
-		targetField = $( `#${fieldId}` );
-		let name = targetField.prop("name");
-
-		if (targetField.hasClass("sing")) {
-			var counter = 1;
-			if (fieldId == "qlfield") {
-				content.forEach((item) => {
-					targetField.append(`<input type="radio" id="${fieldId+counter}" name="${name}" value="${item["id"]}"/>`);
-					targetField.append(`<label for="${fieldId+counter}">${item["name"] + " " + item["code"]}</label>`);
-					targetField.append(`<br />`);
-					counter++;
-				});				
-			} else {
-				content.forEach((item) => {
-					targetField.append(`<input type="radio" id="${fieldId+counter}" name="${name}" value="${item["id"]}"/>`);
-					targetField.append(`<label for="${fieldId+counter}">${item["main"]}</label>`)
-					targetField.append(`<br />`);
-					counter++;
-				});
-			}
-
-		} else if (targetField.hasClass("mult")) {
-			if (content.length == 0) {targetField.append("<p>Пересечений не найдено!</p>")};
-			if (fieldId == "qfield") {
-				content.forEach((item) => {
-					targetField.append(`<option value="${item["id"]}">${item["code"] + " " + item["name"]}</option>`)
-				})				
-			} else {
-				content.forEach((item) => {
-					targetField.append(`<option value="${item["id"]}">${item["main"]}</option>`)
-				})				
-			};
-
-		} else if (targetField.hasClass("tags")) {
+// update different fields depending on the received JSON schema
+function setField(fieldId, entries) {
+	let targetField = $( fieldId )
+	// try {
+	switch (fieldId) {
+		case "#kwfield":
 			let taglist;
-			taglist = content.map((item) => {return item["main"];})
+			taglist = entries["result"].map((item) => {return item["main"];})
 			targetField.tagsInput({
 				"autocomplete":{source:taglist},
 				"delimiter":",",
 				"whitelist":taglist
 			});
-		}
-		targetField.on("input", changeBox);	
-	});
+			break;
+		case "#qlfield":
+		case "#inffield":
+			targetField.append(`<option value="0">Не выбрано</option>`);
+			entries["result"].forEach((item) => {
+				let textOpt = Boolean(item["name"]) ? item["name"].slice(0,40) + "..." : "";
+				targetField.append(`<option value="${item["id"]}">${item["code"] + " " + textOpt}</option>`)
+			})
+			break;
+		case "#qfield":
+			targetField.append(`<option value="0">Не выбрано</option>`);
+			entries["result"].forEach((item) => {
+				let textOpt = Boolean(item["q_txt"]) ? item["q_txt"].slice(0,40) + "..." : "";
+				targetField.append(`<option value="${item["id"]}">${item["q_num"] + item["q_let"] + " " + textOpt}</option>`)
+			})
+			break;
+		default:
+			targetField.append(`<option value="0">Не выбрано</option>`);
+			entries["result"].forEach((item) => {
+				targetField.append(`<option value="${item["id"]}">${item["main"].slice(0,40)}</option>`)
+			})			
+			break;
+	}  // }  catch (err) { console.log(fieldId) }
 }
 
-function changeBox(event) {
-	let fieldId, boxId;
-	fieldId = event.target.id;
-	boxId = field2box[fieldId];
-	$( `#${boxId}` )
-	.importTags($( `#${fieldId}` ).val());
+async function updateChild(event) {
+	let id = "#" + event.target.id;
+	let val = $( id ).val();
+	let child = $( childParamsToParent[id]["child"] );
+	child.empty();
+	childParamsToParent[id] = await loadRelated(host, val, childParamsToParent[id]);
+	setField(childParamsToParent[id]["child"], childParamsToParent[id]);
 }
 
 function assignEvents() {
-	let fullButtons = Array.from($( ".srcbtn" ));
-	for (let button of fullButtons) {
-		button.addEventListener("click", expandSelection);
-		button.addEventListener("click", setOpts);
-	};
+	let form = document.getElementById("srcform");
+	form.addEventListener("submit", (event) => {
+		event.preventDefault();
+		let uriString = host + "/search/?page=1"
+		const formData = new FormData(event.target);
+		for (var pair of formData.entries()) {
+			if ( pair[1] == "0" || pair[1] == "" ) { continue }
+			uriString = uriString + '&' + pair[0] + '=' + pair[1];
+		}
+		window.location.replace(uriString);
+	})
 
-	let closeButtons = Array.from($(".closebtn"));
-	for (let close of closeButtons) {
-		close.addEventListener("click", closePopups);
-	};
-	// attachIndex();
-	$("#FTbutton").on("click", FTsearch);
-	$("#FTsearch").on("submit", FTsearch);
-	$( "#FTsearch" ).on("enter", FTsearch);
+	for (let parent in childParamsToParent) {
+		document.querySelector( parent ).addEventListener("input", updateChild);
+	}
 }
 
-assignEvents();
+$( document ).ready( () => {
+	loadInitial(host);
+	assignEvents();
+} )

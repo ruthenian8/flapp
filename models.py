@@ -1,3 +1,4 @@
+import re
 from sqlalchemy.dialects.mysql import VARCHAR, YEAR, TINYTEXT, LONGTEXT
 from flask_login import LoginManager, UserMixin
 from flask_sqlalchemy import SQLAlchemy
@@ -44,15 +45,11 @@ class SearchSchema(Schema):
     q_list = fields.Int()
     questions = fields.Str()
     year = fields.Int()
+    inf = fields.Int()
     ray = fields.Int()
     vill_txt = fields.Int()
     vill_inf = fields.Int()
-    offset = fields.Int(
-        required=True,
-        validate=validate.Range(min=0))
-    limit = fields.Int(
-        required=True,
-        validate=validate.Range(min=0))
+    page = fields.Int(required=True)
 
 class User(UserMixin, database.Model):
     __tablename__ = 'users'
@@ -127,7 +124,7 @@ class VillsTxt(database.Model):
 class Informants(database.Model):
     __tablename__ = "informators"
     id = database.Column("id", database.Integer, primary_key=True, autoincrement=True)
-    main = database.Column("name", TINYTEXT)
+    name = database.Column("name", TINYTEXT)
     code = database.Column("code", VARCHAR(8))
     bio = database.Column("bio", database.Text)
     vill = database.relationship("VillsInf", secondary="i2vi")
@@ -198,6 +195,21 @@ class TextSchema(Schema):
     collector = fields.List(fields.Nested(lambda: MainSchema()))
     question = fields.List(fields.Nested(lambda: QuestSchema()))
 text_schema = TextSchema()
+
+class Pics(database.Model):
+    __tablename__ = "imgs"
+    id = database.Column("id", database.Integer, primary_key=True, autoincrement=True)
+    path = database.Column("path", VARCHAR(50))
+    descr = database.Column("descr", VARCHAR(255))
+class PicSchema(Schema):
+    id = fields.Int(required=True)
+    path = fields.Str(required=True)
+    descr = fields.Str()
+galschema = PicSchema()
+class PageRequestSchema(Schema):
+    pages = fields.Int(required=True, validate=validate.Range(min=0))
+    page_items = fields.List(fields.Nested(lambda: PicSchema()), required=False)
+page_request_schema = PageRequestSchema()
 
 class Text2vill(database.Model):
     __tablename__ = "t2v"

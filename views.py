@@ -66,15 +66,14 @@ app = create_app()
 login_manager.init_app(app)
 
 #
-#
-#
-# @app.after_request
-# def after(response):
-#     response.headers['Content-Security-Policy'] = "default-src 'self'; style-src 'unsafe-inline'"
-#     response.headers['X-Content-Type-Options'] = "nosniff"
-#     response.headers['X-XSS-Protection'] = '1; mode=block'
-#     response.headers['Cross-Origin-Resource-Policy']='same-origin'
-#     return response
+@app.after_request
+def after(response):
+    # response.headers['Content-Security-Policy'] = "default-src 'self'; style-src 'unsafe-inline'"
+    response.headers['X-Content-Type-Options'] = "nosniff"
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Cross-Origin-Resource-Policy']='same-origin'
+    response.headers['SameSite']='Lax'
+    return response
 
 @app.context_processor
 def add_prefix():
@@ -132,15 +131,24 @@ def search():
     context = params
     if request.args:
         try:
+            # The code in the comments is an alternative way of validating the input (does not work)
+            # user_params = request.args.copy()
+            # assert "page" in user_params
+            # for key in user_params.keys():
+            #     if not user_params[key]:
+            #         del user_params[key]
+            #         continue
+            #     if key not in ["FT", "keywords"]:
+            #         user_params[key] = int(user_params[key])
             user_params = SearchSchema().load(request.args)
         except:
-            return Response(status=403, response="403: invalid request")
+            abort(404)
+        # go directly to the page, if id is given
         id = user_params.get("id", None)
         if id:
-            return redirect(url_for(
-                "text",
-                idx=id
-            ))
+            return redirect(url_for("text",
+            idx=id))
+        # make a request to the api
         context = query_wrapper(database, **user_params)
         return render_template("search.html", **context)
     return render_template("search.html", **context)
@@ -149,6 +157,12 @@ def search():
 def year():
     all_y = Years.query.all()
     resp = make_json_response(all_y, main_schema)
+    return resp
+
+@app.route('/api/infs')
+def infs():
+    all_infs = Informants.query.all()
+    resp = make_json_response(all_infs, inf_schema)
     return resp
 
 @app.route('/api/prs')
@@ -167,16 +181,34 @@ def q_by_list(pr_id):
     resp = make_json_response(qs, quest_schema)
     return resp
 
+@app.route("/api/quests")
+def all_qs():
+    qs = database.session.query(Questions).all()
+    resp = make_json_response(qs, quest_schema)
+    return resp
+
 @app.route("/api/rays")
 def rayon():
     all_r = Rayons.query.all()
     resp = make_json_response(all_r, main_schema)
     return resp
 
+@app.route('/api/rvi')
+def all_v_inf():
+    vil = database.session.query(VillsInf).all()
+    resp = make_json_response(vil, main_schema)
+    return resp
+
 @app.route('/api/rvi/<r_id>')
 def v_inf(r_id):
     in_r = database.session.query(VI2ray.main).filter(VI2ray.refer == r_id)
     vil = database.session.query(VillsInf).filter(VillsInf.id.in_(in_r.subquery())).all()
+    resp = make_json_response(vil, main_schema)
+    return resp
+
+@app.route("/api/rvt")
+def all_v_txt():
+    vil = database.session.query(VillsTxt).all()
     resp = make_json_response(vil, main_schema)
     return resp
 
@@ -193,19 +225,38 @@ def kws():
     resp = make_json_response(all_k, main_schema)
     return resp
 
+@app.route("/gallery")
+def gallery():
+    initial = Pics.query.paginate(per_page=8, page=1)
+    return render_template('gallery.html', imgs=initial)
+
+@app.route("/api/pics")
+def pics():
+    try:
+        arg = page_request_schema.load(request.args)
+    except Exception as e:
+        print(e)
+        abort(403)
+    selected_page = Pics.query.paginate(per_page=4, page=arg["pages"])
+    print(selected_page.items)
+    response = {
+        "pages": selected_page.pages,
+        "page_items": galschema.dump(selected_page.items, many=True)
+    }
+    return page_request_schema.dumps(response)
+
 @app.route("/text/<idx>")
 def text(idx):
     text = Texts.query.filter_by(id=idx).one_or_none()
     if text is not None:
         context = {}
+        context["id"] = text.id
         context["text"] = text.text
-        context["year"] = text.year[0].main
-        context["informs"] = ", ".join(
-            [inf.code for inf in text.informator]
-        )
-        context["kwords"] = ", ".join(
-            [keyword.main for keyword in text.keyword]
-        )
+        context["year"] = dict(main=text.year[0].main, id=text.year[0].id)
+        context["informs"] = text.informator
+        context["kwords"] = [keyword.main for keyword in text.keyword]
+        context["question"] = text.question
+        context["vill"] = text.vill
         return render_template("text.html", **context)
     selected = params
     return render_template("search.html", **selected)
@@ -216,7 +267,11 @@ def text(idx):
 
 @app.route("/index")
 def index():
-    return render_template("index.html")
+    all_ql = Question_lists.query.all()
+    qls = ql_schema.dump(all_ql, many=True)
+    all_r = Rayons.query.all()
+    rays = main_schema.dump(all_r, many=True)   
+    return render_template("index.html", qls=qls, rays=rays)
 
 @app.route("/")
 def blank():

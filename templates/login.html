@@ -1,17 +1,23 @@
 {% extends 'base.html' %}
 
 {% block body %}
-<div>
-	<h2 id="authtitle">Аутентификация</h2>
-	<form action="{{prefix}}/login" method="POST">
-		<label for="username">Логин</label>
-		<input class="loginfield" type="text" id="username" name="username" placeholder="user1">
-		<label for="password">Пароль</label>
-		<input class="loginfield" type="password" id="password" name="password" placeholder="***">
-		<button class="loginfield" type="submit">Войти</button>
-	</form>
-	<div id="message">
-		<p>{{message}}</p>
+<div class="row col-sm-12">
+	<div class="card">
+		<div class="card-title" style="margin: auto;">
+			<h4 id="authtitle">Аутентификация</h4>
+		</div>
+		<div class="card-body d-flex justify-content-center">
+			<form action="{{prefix}}/login" method="POST" class="p-1 bd-highlight d-grid gap-0">
+				<label for="username">Логин</label><br/>
+				<input class="loginfield p-1" type="text" id="username" name="username" placeholder="user1"><br/>
+				<label for="password">Пароль</label><br/>
+				<input class="loginfield p-1" type="password" id="password" name="password" placeholder="***"><br/>
+				<button class="loginfield p-1" type="submit">Войти</button>
+			</form>
+			<div id="message">
+				<p>{{message}}</p>
+			</div>
+		</div>		
 	</div>
 </div>
 {% endblock %}

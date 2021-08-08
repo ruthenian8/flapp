@@ -1,204 +1,237 @@
 {% extends 'base.html' %}
 
 {% block body %}
-
+<!-- горизонтальная регуляция -->
+<div class="row d-flex justify-content-center">
+	<!-- вертикальная регуляция -->
+	<div class="col-11 p-1 bd-highlight d-grid gap-2" id="mainCol" style="margin: auto;">
 <!-- ../static/js/search.js -->
-<div id="overlay"></div>
-<div id="srcdiv">
+<!-- <div id="srcdiv" class="d-grid gap-3"> -->
 	<div id="formdiv">
-		<form id="srcform" method="POST">
-			<div id="FTdiv">
-			<label id="FTlabel" for="FTsearch">Поиск&nbsp;по&nbsp;тексту:</label>
-			<input id="FTsearch" type="text" name="FT" value="{{ FT }}">
-			<button id="FTbutton" class="button">Ввод</button>
-			<div id="FTtip" class="tip FT-tip"></div>		
-			</div>
-			<div id="boxdiv">
-				<div class="inpwrap">
-					<div id="idbox" class="inpbox">
-						<p class="annot">Id текста</p>
-					</div>
-					<button id="idfull" class="srcbtn button">Выбрать</button>
-					<div id="idtip" class="tip regular-tip"></div>
-				</div>
-				<div class="inpwrap">
-					<div id="kwbox" class="inpbox">
-						<p class="annot">Ключевые слова</p>
-					</div>
-					<button id="kwfull" class="srcbtn button">Выбрать</button>
-					<div id="kwtip" class="tip regular-tip"></div>
-				</div>
-				<div class="inpwrap">
-					<div id="qlbox" class="inpbox">
-						<p class="annot">Опросник</p>
-					</div>
-					<button id="qlfull" class="srcbtn button">Выбрать</button>
-					<div id="qltip" class="tip regular-tip"></div>
-				</div>
-				<div class="inpwrap">
-					<div id="qbox" class="inpbox">
-						<p class="annot">Вопрос</p>
-					</div>
-					<button id="qfull" class="srcbtn button">Выбрать</button>
-					<div id="qtip" class="tip regular-tip"></div>
-				</div>
-				<div class="inpwrap">
-					<div id="ybox" class="inpbox">
-						<p class="annot">Год записи</p>
-					</div>
-					<button id="yfull" class="srcbtn button">Выбрать</button>
-					<div id="ytip" class="tip regular-tip"></div>
-				</div>
-				<div class="inpwrap">
-					<div id="raybox" class="inpbox">
-						<p class="annot">Район записи</p>
-					</div>
-					<button id="rayfull" class="srcbtn button">Выбрать</button>
-					<div id="raytip" class="tip regular-tip"></div>
-				</div>	
-				<div class="inpwrap">
-					<div id="VTbox" class="inpbox">
-						<p class="annot">Место записи текста</p>
-					</div>
-					<button id="VTfull" act	class="srcbtn button">Выбрать</button>
-					<div id="VTtip" class="tip regular-tip"></div>
-				</div>	
-				<div class="inpwrap">
-					<div id="VIbox" class="inpbox">
-						<p class="annot">Место жительства информанта</p>
-					</div>
-					<button id="VIfull" class="srcbtn button">Выбрать</button>
-					<div id="VItip" class="tip regular-tip"></div>
-				</div>
-			</div>
-			<div id="idpop" class="popup">
-				<button class="closebtn">_</button>
-				<div class="formwrap tagsinput">
-					<label for="idfield" class="plabel">Номер записи</label><br />
-					<input 
-						id="idfield" 
-						type="text" 
-						name="id" 
-						class="pform tag-input ui-autocomplete-input"
-						data-selected="{{ id }}"
-						style="display: block;"
-					/>						
+		<form id="srcform" method="GET">
+			<!-- fulltext search input -->
+			<div id="FTdiv" class="d-grid gap-3" style="margin: auto; margin-bottom: 1rem;">
+				<input id="FTsearch" class="form-control me-2" placeholder="Поиск&nbsp;по&nbsp;тексту:" type="search" aria-label="search" name="FT" value="{{ FT }}">
+			<!-- form submission button -->
+				<div id="commitbts" class="d-md-flex" style="padding: 0;">
+					<button id="launch" class="btn btn-primary" type="submit">Поиск</button>
 				</div>			
 			</div>
-			<div id="kwpop" class="popup">
-				<button class="closebtn">_</button>
-				<div class="formwrap">
-					<label for="kwfield tagsinput" class="plabel">Ключевые слова</label>
-					<input 
-						id="kwfield" 
-						type="text" 
-						name="keywords" 
-						class="pform tags tag-input ui-autocomplete-input"
-						data-selected="{{ keywords }}"
-					/>						
-				</div>
-			</div>
-			<div id="qlpop" class="popup">
-				<button class="closebtn">_</button>
-				<div class="formwrap">
-					
-					<fieldset 
-						id="qlfield" 
-						name="q_list" 
-						class="pform sing"
-						data-selected="{{ q_list }}">
-						<legend>
-							<label for="qlfield" class="plabel">Опросник</label>
-						</legend>
-					</fieldset>						
+		
+			<!-- metadata modal toggle -->
+			<div class="modal fade" id="metadataModalToggle" aria-hidden="true" aria-labelledby="modalHeader1" tabindex="-1">
+				<div class="modal-dialog modal-dialog-centered modal-lg">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h6 class="modal-title" id="modalHeader1">Метаданные</h6>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<div class="modal-body">
+							<div class="formwrap mb-3 tagsinput">
+								<!-- <label for="idfield" class="plabel">Номер записи: </label> -->
+								<input 
+									id="idfield" 
+									type="text" 
+									name="id"
+									placeholder="Номер записи:" 
+									class="pform tag-input ui-autocomplete-input form-control"
+									data-selected="{{ id }}"
+									style="display: block;"
+								/>						
+							</div>			
+							<div class="formwrap mb-3">
+								<label for="yfield" class="plabel">Год записи</label>
+								<select 
+									id="yfield" 
+									name="year" 
+									class="pform mult form-select" 
+									data-selected="{{ year }}">
+								</select>					
+							</div>
+							<div class="formwrap mb-3">
+								<label for="inffield" class="plabel">Информант</label>
+								<select 
+									id="inffield" 
+									name="inf" 
+									class="pform mult form-select" 
+									data-selected="{{ inf }}">
+								</select>					
+							</div>			
+						</div>						
+					</div>
 				</div>				
 			</div>
-			<div id="qpop" class="popup">
-				<button class="closebtn">_</button>
-				<div class="formwrap">
-					<label for="qfield" class="plabel">Вопрос</label>
-					<select 
-						id="qfield" 
-						name="questions" 
-						class="pform mult" 
-						data-selected="{{ questions }}">
-					</select>						
+			<!-- theme modal toggle -->
+			<div class="modal fade" id="themeModalToggle" aria-hidden="true" aria-labelledby="modalHeader2" tabindex="-1">
+				<div class="modal-dialog modal-dialog-centered modal-lg">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h6 class="modal-title" id="modalHeader2">Тематика</h6>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<div class="modal-body">
+							<div class="formwrap mb-3">
+								<label for="kwfield tagsinput" class="plabel">Ключевые слова: </label>
+								<input 
+									id="kwfield" 
+									type="text" 
+									name="keywords" 
+									class="pform tags tag-input ui-autocomplete-input form-control"
+									data-selected="{{ keywords }}"
+								/>						
+							</div>		
+							<div class="formwrap mb-3">
+								<label for="qlfield" class="plabel">Опросник</label>
+								<select 
+									id="qlfield" 
+									name="q_list" 
+									class="pform form-select" 
+									data-selected="{{ q_list }}">
+								</select>						
+							</div>
+							<div class="formwrap mb-3">
+								<label for="qfield" class="plabel">Вопрос</label>
+								<select 
+									id="qfield" 
+									name="questions" 
+									class="pform form-select" 
+									data-selected="{{ questions }}">
+								</select>						
+							</div>	
+						</div>						
+					</div>
 				</div>				
-			</div>			
-			<div id="ypop" class="popup">
-				<button class="closebtn">_</button>
-				<div class="formwrap">
-					<label for="yfield" class="plabel">Год записи</label>
-					<select 
-						id="yfield" 
-						name="year" 
-						class="pform mult" 
-						data-selected="{{ year }}">
-					</select>					
-				</div>		
 			</div>
-			<div id="raypop" class="popup">
-				<button class="closebtn">_</button>
-				<div class="formwrap">
-					<fieldset 
-						id="rayfield" 
-						name="ray" 
-						class="pform sing" 
-						data-selected="{{ ray }}">
-					<legend>
-						<label for="rayfield" class="plabel">Район</label>
-					</legend>
-					</fieldset>					
-				</div>						
-			</div>
-			<div id="vilpop" class="popup">
-				<button class="closebtn">_</button>
-				<div class="formwrap">
-					<label for="VTfield" class="plabel">Место записи текста</label>
-					<select 
-						id="VTfield" 
-						name="vill_txt" 
-						class="pform mult" 
-						data-selected="{{ vill_txt }}">
-					</select>					
+			<!-- place forms modal toggle -->
+			<div class="modal fade" id="placeModalToggle" aria-hidden="true" aria-labelledby="modalHeader3" tabindex="-1">
+				<div class="modal-dialog modal-dialog-centered modal-lg">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h6 class="modal-title" id="modalHeader3">Место записи</h6>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<div class="modal-body">
+							<div class="formwrap mb-3">
+								<label for="rayfield" class="plabel">Район</label>
+								<select 
+									id="rayfield" 
+									name="ray" 
+									class="pform form-select" 
+									data-selected="{{ ray }}">
+								</select>					
+							</div>	
+							<div class="formwrap mb-3">
+								<label for="VTfield" class="plabel">Место записи текста</label>
+								<select 
+									id="VTfield" 
+									name="vill_txt" 
+									class="pform form-select" 
+									data-selected="{{ vill_txt }}">
+								</select>					
+							</div>		
+							<div class="formwrap mb-3">
+								<label for="VIfield" class="plabel">Место жительства информанта</label>
+								<select 
+									id="VIfield" 
+									name="vill_inf" 
+									class="pform mult form-select" 
+									data-selected="{{ vill_inf }}">
+								</select>							
+							</div>
+						</div>
+					</div>
 				</div>				
-			</div>	
-			<div id="vilinfpop" class="popup">
-				<button class="closebtn">_</button>
-				<div class="formwrap">
-					<label for="VIfield" class="plabel">Место жительства информанта</label>
-					<select 
-						id="VIfield" 
-						name="vill_inf" 
-						class="pform mult" 
-						data-selected="{{ vill_inf }}">
-					</select>							
-				</div>					
-			</div>									
-			<div id="commitbts">
-				<button id="cancel" class="firebtn button">Сброс</button>
-				<button id="launch" class="firebtn button">Поиск</button>
-			</div>			
+			</div>						
 		</form>
-	</div>
-	<div id="resultdiv">
-		{% if found is string %}
-			<div>
-				<p>{{found}}</p>
+		<div class="col-sm-12 card" style="background-color: transparent;">
+			<div class="btn-group card-body justify-content-center" role="group" aria-label="Basic outlined example">
+				<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#metadataModalToggle">Метаданные</button>
+				<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#themeModalToggle">Тематика</button>
+				<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#placeModalToggle">Геоданные</button>
 			</div>
-		{% else %}
-			{% for item in found %}
-				<div>
-					<article>
-						{{ item.text }}
-					</article>
+		</div>
+	</div>
+
+	<!-- results section -->
+	<div id="resultdiv" class="row">
+		<div class="col-sm-12">
+			<!-- display message if nothing is found -->
+			{% if found is string %}
+				<div class="card">
+					<div class="card-body">{{found}}</div>
+				</div>
+			{% else %}
+				<!-- pagination + results if search is successful -->
+				<nav aria-label="Search navigation">
+					<ul class="pagination justify-content-center">
+						<li class="page-item"><a class="page-link" {% if found.page != 1 %}
+						href="{{ url_for('search', page=found.prev_num) }}
+						{% if FT %}&FT={{FT}}{% endif %}
+						{% if inf %}&inf={{inf}}{% endif %}
+						{% if keywords %}&keywords={{keywords}}{% endif %}
+						{% if q_list %}&q_list={{q_list}}{% endif %}
+						{% if questions %}&questions={{questions}}{% endif %}
+						{% if year %}&year={{year}}{% endif %}
+						{% if ray %}&ray={{ray}}{% endif %}
+						{% if vill_txt %}&vill_txt={{vill_txt}}{% endif %}
+						{% if vill_inf %}&vill_inf={{vill_inf}}{% endif %}"
+						{% endif %}>&laquo;</a></li>
+					{% for pn in found.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+						{% if pn %}
+							{% if found.page == pn %}
+								<li class="page-item disabled"><strong class="page-link">{{ pn }}</strong></li>
+							{% else %}
+								<li class="page-item"><a class="page-link" href="{{ url_for('search', page=pn) }}
+								{% if FT %}&FT={{FT}}{% endif %}
+								{% if inf %}&inf={{inf}}{% endif %}
+								{% if keywords %}&keywords={{keywords}}{% endif %}
+								{% if q_list %}&q_list={{q_list}}{% endif %}
+								{% if questions %}&questions={{questions}}{% endif %}
+								{% if year %}&year={{year}}{% endif %}
+								{% if ray %}&ray={{ray}}{% endif %}
+								{% if vill_txt %}&vill_txt={{vill_txt}}{% endif %}
+								{% if vill_inf %}&vill_inf={{vill_inf}}{% endif %}">{{ pn }}</a></li>
+							{% endif %}
+						{% else %}
+							<li class="page-item disabled"><span class="page-link">...</span></li>
+						{% endif %}
+					{% endfor %}
+						<li class="page-item"><a class="page-link" {% if found.page != found.pages %}
+						href="{{ url_for('search', page=found.next_num) }}
+						{% if FT %}&FT={{FT}}{% endif %}
+						{% if inf %}&inf={{inf}}{% endif %}
+						{% if keywords %}&keywords={{keywords}}{% endif %}
+						{% if q_list %}&q_list={{q_list}}{% endif %}
+						{% if questions %}&questions={{questions}}{% endif %}
+						{% if year %}&year={{year}}{% endif %}
+						{% if ray %}&ray={{ray}}{% endif %}
+						{% if vill_txt %}&vill_txt={{vill_txt}}{% endif %}
+						{% if vill_inf %}&vill_inf={{vill_inf}}{% endif %}"
+						{% endif %}>&raquo;</a></li>
+					</ul>
+				</nav>
+				<!-- iteration over found items; links to texts as buttons -->
+				{% for item in found.items %}
+				<div class="card">
+					<div class="card-body">
+						<p class="card-text"><h6 style="display:inline;">{{ loop.index }}</h6> {{ item.text|truncate(500, False) }}</p>
+						<a class="btn btn-primary" href="{{ url_for('text', idx=item.id) }}">Запись № {{ item.id }}</a>
+					</div>
 				</div>				
-			{% endfor %}
-		{% endif %}
+				{% endfor %}
+			{% endif %}			
+		</div>
+	</div>
+<!-- </div> -->
 	</div>
 </div>
 
-<link rel="stylesheet" type="text/css" href="../static/css/search.css" />
+<!-- <link rel="stylesheet" type="text/css" href="../static/css/search.css" /> -->
+<style type="text/css">
+.ui-autocomplete {
+	z-index: 1100;
+}
+</style>
 <script type="text/javascript" src="{{ url_for('static', filename='js/native/search.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/native/jquery.tagsinput-revisited.js') }}"></script>
 <link rel="stylesheet" href="../static/css/jquery.tagsinput-revisited.css" />

@@ -1,17 +1,43 @@
 {% extends 'base.html' %}
 
 {% block body %}
-<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
-tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
-cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
-proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-
-<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
-tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
-cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
-proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+<!-- горизонтальная регуляция -->
+<style type="text/css">
+	.card, .list-group-item {
+		background-color: transparent;
+	}
+</style>
+<div class="row d-flex justify-content-center">
+	<!-- вертикальная регуляция -->
+	<div class="col-8 p-1 bd-highlight d-grid gap-1" id="mainCol" style="margin: auto;">
+		<h1 style="font-size: 1.6rem;">Фольклорная&nbsp;и этнолингвистическая экспедиция&nbsp;РГГУ</h1>
+		<div class="card">
+			<div class="card-body">
+				<h6 class=card-title>Экспедиция работает с 1993 г. в различных районах Архангельской обл.</h6>
+			</div>
+			<ul class="list-group list-group-flush card-text">
+				{% for item in rays %}
+				<li class="list-group-item"><a href="{{ url_for('search', page=1) }}&ray={{ item.id }}">{{ item.main }}</a>
+					<div class="badge rounded-pill bg-primary" style="float: right; font-size:1rem;">{{ loop.index }}</div></li>
+				{% endfor %}
+			</ul> 				
+		</div>
+		<p>На 2015 г. проведено 33 экспедиции, обследовано более 70 сел и отдельных деревень, опрошено около 4500 информантов.</p>
+		<div class="card">
+			<div class="card-body">
+				<h6 class="card-title">Экспедиция работает по программам-опросникам:</h6>
+			</div>
+			<ul class="list-group list-group-flush card-text">
+				{% for item in qls %}
+				<!-- filter false entry -->
+				{% if loop.index != 39 %}
+				<li class="list-group-item"><a href="{{ url_for('search', page=1) }}&q_list={{ item.id }}">{{ item.name }}</a><div class="badge rounded-pill bg-primary" style="float: right; font-size:1rem;">{{ item.code }}</div></li>
+				{% endif %}
+				{% endfor %}
+			</ul>
+			<p class="card-footer">Часть программ составлена участниками экспедиции РГГУ, ряд программ разработан отделом этнолингвистики и фольклора Институтом славяноведения РАН для экспедиций в Полесье и адаптирован нами к севернорусскому материалу, программа по традиционному застолью написана в сотрудничестве с Государственным республиканским центром русского фольклора</p>
+		</div>
+		<p>Методы полевой работы: тематические (по программам) опросы значительного числа жителей села (30-60%), включенное наблюдение, запись свободной беседы.</p>		
+	</div>
+</div>
 {% endblock %}
