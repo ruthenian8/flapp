@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="row d-flex justify-content-center">
+	<!-- вертикальная регуляция -->
+	<div class="col-11 p-1 bd-highlight d-grid gap-2" id="mainCol" style="margin: auto;">
+		<div class="card" style="background-color: transparent;">
+			<div class="card-title">
+				<h1 style="font-size: 1.2rem;">Ошибка</h1>
+			</div>
+            <div class="card-body">
+                <p style="font-size: 1rem; font-weight: bold;">
+                Если вы видите эту страницу, то в работе сайта произошла ошибка.<br>
+                Попробуйте зайти на сайт позже или воспользуйтесь разделом "помощь".
+                </p>
+            </div>
+		</div>
+    </div>
+</div>
+{% endblock %}

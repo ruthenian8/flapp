@@ -1,22 +1,17 @@
-import copy
-import json
-import os
-import re
-from urllib.parse import quote
-from collections import defaultdict
-
-from sqlalchemy import and_, text as sql_text
+import datetime
+from marshmallow.exceptions import ValidationError
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, Response, make_response, jsonify, send_file, safe_join, abort
-from flask import render_template, request, url_for, redirect
+from flask import Flask, Response, make_response, abort
+from flask import render_template, request, url_for, redirect, Markup
 from flask_login import login_user, logout_user, login_required
 # from flask_uploads import UploadSet, configure_uploads
 from flask_admin import Admin
 from sqlalchemy.orm.exc import NoResultFound
-from flapp.models import *
-from flapp.admin_models import admin_views, IndexView
-from flapp.config import CONFIG, ROOT_PATH, SECRET, URL_PREFIX
-from flapp.db_query import query_wrapper, nonedict, unique_not_none, params
+from models import *
+from admin_models import admin_views, IndexView
+from config import CONFIG, ROOT_PATH, SECRET, URL_PREFIX
+from db_query import query_wrapper, params
+from flask_caching import Cache
 
 db_url = "mysql+pymysql://{}:{}@{}:{}/{}".format(
     CONFIG["USER"],
@@ -40,6 +35,8 @@ def create_app():
     app.config["TEMPLATES_AUTO_RELOAD"] = True
     app.config["FLASK_ADMIN_SWATCH"] = "cerulean"
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+    app.config['SQLALCHEMY_POOL_RECYCLE'] = 280
+    app.config['SQLALCHEMY_POOL_TIMEOUT'] = 20
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SQLALCHEMY_RECORD_QUERIES"] = False
     app.config["SQLALCHEMY_MAX_OVERFLOW"] = 3
@@ -58,8 +55,13 @@ def create_app():
     admin = admin_views(admin)
     return app
 
+cache = Cache(
+    config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 300}
+)
+
 app = create_app()
 login_manager.init_app(app)
+cache.init_app(app)
 
 #
 @app.after_request
@@ -94,7 +96,7 @@ def login():
 
 @app.route("/logout")
 @login_required
-def logout(): 
+def logout():
     logout_user()
     return redirect(url_for('index'))
 
@@ -122,103 +124,92 @@ def make_json_response(inp:list, schema:object=main_schema):
     response.headers["Content-Type"] = "application/json"
     return response
 
+def form_txt(texts:list, delim="="):
+    text = f"Записей: {str(len(texts))}"
+    for item in texts:
+        text += """
+ID: {}
+Год: {}
+Место записи: {}
+Информанты: {}
+Вопрос: {}
+Текст: {}
+Ключевые слова: {}
+{}
+        """.format(
+            item.id,
+            item.year[0].main,
+            "; ".join([f"{vill.ray[0].main}, {vill.main}" for vill in item.vill]),
+            "; ".join([inf.code for inf in item.informator]),
+            "; ".join([f"{q.q_list[0].code} {q.q_num}{q.q_let}" for q in item.question]),
+            item.text.replace("\r\n","\n"),
+            "; ".join([keyword.main for keyword in item.keyword]),
+            delim * 50
+        )
+    response = Response(text, mimetype="text/txt")
+    response.headers['Content-Disposition'] = (
+        'attachment; filename="{}.txt"'.format("QueryResult"))
+    return response
+
 @app.route('/search/', methods=["GET"])
 def search():
     context = params
-    if request.args:
-        try:
-            # The code in the comments is an alternative way of validating the input (does not work)
-            # user_params = request.args.copy()
-            # assert "page" in user_params
-            # for key in user_params.keys():
-            #     if not user_params[key]:
-            #         del user_params[key]
-            #         continue
-            #     if key not in ["FT", "keywords"]:
-            #         user_params[key] = int(user_params[key])
-            user_params = SearchSchema().load(request.args)
-        except:
-            abort(404)
-        # go directly to the page, if id is given
-        id = user_params.get("id", None)
-        if id:
-            return redirect(url_for("text",
-            idx=id))
-        # make a request to the api
-        context = query_wrapper(database, **user_params)
-        return render_template("search.html", **context)
-    return render_template("search.html", **context)
-
-@app.route("/api/yrs")
-def year():
-    all_y = Years.query.all()
-    resp = make_json_response(all_y, main_schema)
-    return resp
-
-@app.route('/api/infs')
-def infs():
-    all_infs = Informants.query.all()
-    resp = make_json_response(all_infs, inf_schema)
-    return resp
-
-@app.route('/api/prs')
-def q_lists():
-    all_ql = Question_lists.query.all()
-    resp = make_json_response(all_ql, ql_schema)
-    return resp
-
-@app.route("/api/qlist/<pr_id>")
-def q_by_list(pr_id):
+    if not request.args:
+        return render_template("search.html", context=context)
+    elif len(request.args) == 0:
+        return render_template("search.html", context=context)
     try:
-        in_ql = [item.id for item in Question2ql.query.filter(Question2ql.refer==int(pr_id)).all()]
+        user_params = SearchSchema().load(request.args)
+    except ValidationError:
+        abort(403)
+    # go directly to the page, if id is given
+    id = user_params.get("id", None)
+    if id:
+        return redirect(url_for("text", idx=id))
+    # make a request to the api
+    if request.args.get("download", None) == "True":
+        context = query_wrapper(database, False, **user_params)
+        # context = query_wrapper(database, False, **user_params)
+        # not downloading empty subsets
+        if context["found"] == "Запрос не дал результатов":
+            return render_template("search.html", context=context)
+        # download
+        return form_txt(context["found"])
+    # otherwise show results
+    # context = query_wrapper(database, True, **user_params)
+    context = query_wrapper(database, True, **user_params)
+    return render_template("search.html", context=context)
+
+apiMapping = {
+    "sobs":{"model":Collectors, "schema":sob_schema},
+    "yrs":{"model":Years, "schema":main_schema},
+    "infs":{"model":Informants, "schema":inf_schema},
+    "prs":{"model":Question_lists, "schema":ql_schema},
+    "quests":{"model":Questions, "schema":quest_schema, "related":Question2ql},
+    "rays":{"model":Rayons, "schema":main_schema},
+    "rvi":{"model":VillsInf, "schema":main_schema, "related":VI2ray},
+    "rvt":{"model":VillsTxt, "schema":main_schema, "related":Vill2ray},
+    "kws":{"model":Keywords, "schema":main_schema}
+}
+
+@app.route("/api/<tabname>")
+@cache.cached(timeout=120)
+def apiGeneric(tabname):
+    result = apiMapping[tabname]["model"].query.all()
+    resp = make_json_response(result, apiMapping[tabname]["schema"])
+    return resp
+
+@app.route("/api/<tabname>/<int:related>")
+@cache.cached(timeout=120)
+def apiGenericRelation(tabname, related):
+    mainModel = apiMapping[tabname]["model"]
+    rel = apiMapping[tabname]["related"]
+    try:
+        sub = database.session.query(rel.main).filter(rel.refer == related)
     except NoResultFound:
         abort(404)
-    qs = database.session.query(Questions).filter(Questions.id.in_(in_ql)).all()
-    resp = make_json_response(qs, quest_schema)
-    return resp
-
-@app.route("/api/quests")
-def all_qs():
-    qs = database.session.query(Questions).all()
-    resp = make_json_response(qs, quest_schema)
-    return resp
-
-@app.route("/api/rays")
-def rayon():
-    all_r = Rayons.query.all()
-    resp = make_json_response(all_r, main_schema)
-    return resp
-
-@app.route('/api/rvi')
-def all_v_inf():
-    vil = database.session.query(VillsInf).all()
-    resp = make_json_response(vil, main_schema)
-    return resp
-
-@app.route('/api/rvi/<r_id>')
-def v_inf(r_id):
-    in_r = database.session.query(VI2ray.main).filter(VI2ray.refer == r_id)
-    vil = database.session.query(VillsInf).filter(VillsInf.id.in_(in_r.subquery())).all()
-    resp = make_json_response(vil, main_schema)
-    return resp
-
-@app.route("/api/rvt")
-def all_v_txt():
-    vil = database.session.query(VillsTxt).all()
-    resp = make_json_response(vil, main_schema)
-    return resp
-
-@app.route("/api/rvt/<r_id>")
-def v_txt(r_id):
-    in_r = database.session.query(Vill2ray.main).filter(Vill2ray.refer == r_id)
-    vil = database.session.query(VillsTxt).filter(VillsTxt.id.in_(in_r.subquery())).all()
-    resp = make_json_response(vil, main_schema)
-    return resp
-
-@app.route("/api/kws")
-def kws():
-    all_k = Keywords.query.all()
-    resp = make_json_response(all_k, main_schema)
+    result = database.session.query(mainModel).filter(mainModel.id.in_(sub.subquery())).all()
+    resp = make_json_response(result, apiMapping[tabname]["schema"])
     return resp
 
 @app.route("/gallery")
@@ -247,9 +238,10 @@ def text(idx):
     if text is not None:
         context = {}
         context["id"] = text.id
-        context["text"] = text.text
+        context["text"] = Markup(text.text.replace("\r\n","<br/>"))
         context["year"] = dict(main=text.year[0].main, id=text.year[0].id)
         context["informs"] = text.informator
+        context["sobs"] = text.collector
         context["kwords"] = [keyword.main for keyword in text.keyword]
         context["question"] = text.question
         context["vill"] = text.vill
@@ -264,10 +256,15 @@ def text(idx):
 @app.route("/index")
 def index():
     all_ql = Question_lists.query.all()
-    qls = ql_schema.dump(all_ql, many=True)
     all_r = Rayons.query.all()
-    rays = main_schema.dump(all_r, many=True)   
-    return render_template("index.html", qls=qls, rays=rays)
+    context = dict(
+        villnum = database.session.query(VillsTxt).count() // 10 * 10,
+        infnum = database.session.query(Informants).count() // 100 * 100,
+        curyear = datetime.date.today().year,
+        qls = ql_schema.dump(all_ql, many=True),
+        rays = main_schema.dump(all_r, many=True)
+    )
+    return render_template("index.html", **context)
 
 @app.route("/")
 def blank():
@@ -280,6 +277,7 @@ def help_page():
 @app.route("/about")
 def about_page():
     return render_template("about.html")
+
 #
 #
 #

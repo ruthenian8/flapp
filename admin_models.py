@@ -7,7 +7,7 @@ from flask_admin.base import MenuLink
 from flask_login import current_user
 from flask import redirect, url_for
 from jinja2 import Markup
-from flapp.models import *
+from models import *
 
 class BaseView(ModelView):
     """Class for admin models"""

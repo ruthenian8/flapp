@@ -1,1 +1,1 @@
-from flapp.views import app
+from views import app

@@ -2,16 +2,6 @@
 
 {% block body %}
 <div id="textwrap">
-	<!-- row with question -->
-	<div class="row">
-		<div class="col-sm-12 align-self-center" class="card">
-			<div id="question" class="metatext card-body">
-				{% for item in question %}				
-				<a class="card-text" href="{{ url_for('search', page=1, questions=item.id) }}">{{ item.q_num }}{{ item.q_let }} {{ item.q_txt }}</a><br/>
-				{% endfor %}
-			</div>		
-		</div>	
-	</div>
 	<!-- row with main text -->
 	<div class="row">
 		<div class="col-sm-12 align-self-center" class="card">
@@ -38,31 +28,52 @@
 					</p>
 				</li>
 				<li class="nav-item">
+					<p id="infs" class="metatext">Собиратели:<br />
+					{% for item in sobs %}	
+					<a class="card-text" href="{{ url_for('search', page=1, sob=item.id) }}" title="{{ item.name }}">{{ item.code }}</a><br/>
+					{% endfor %}
+					</p>
+				</li>
+				<li class="nav-item">
 					<p id="vill" class="metatext">Место записи:<br/>
 						{% for item in vill %}
-						<a href="{{ url_for('search', page=1, vill_txt=item.id) }}">{{ item.main }}</a><br/>
+						<a href="{{ url_for('search', page=1, vill_txt=item.id) }}">{{ item.main }}, {{item.ray[0]["main"]}}</a><br/>
 						{% endfor %}
 					</p>
 				</li>
 			</ul>		
 		</div>
+	</div>
+	<!-- row with question -->
+	<div class="row">
+		<div class="col-sm-12 align-self-center" class="card">
+			<div id="question" class="metatext card-body">
+				<h6>Программа, вопрос</h6>
+				{% for item in question %}				
+				<a class="card-text" href="{{ url_for('search', page=1, questions=item.id) }}">{{ item.q_list[0].code }} {{ item.q_num }}{{ item.q_let }} {{ item.q_txt }}</a><br/>
+				{% endfor %}
+			</div>		
+		</div>	
 	</div>	
 	<!-- row with keywords -->
 	<div class="row">
+		<div class="col-sm-12 align-self-center" class="card">
+			<div id="question" class="metatext card-body">
+					<h6>Ключевые слова</h6>
+					<ul class="nav nav-pills">
+					{% for item in kwords %}
+						<li class="nav-item">
+						<a class="nav-link" href="{{ url_for('search', page=1, keywords=item) }}">{{ item }}</a>
+						</li>
+					{% endfor %}
+					</ul>
+			</div>
+		</div>
 		<div class="col-sm-12 d-flex justify-content-center">
-			<script type="text/javascript"><!--
+			<script type="text/javascript">
 document.write(VK.Share.button(false,{type: "custom", text: "<img class=\"p-1\" src=\"https://vk.com/images/share_32.png\" width=\"32\" height=\"32\" />"}));
---></script>
-		</div>
-		<div class="col-sm-12 align-self-center">
-			<ul class="nav nav-pills">
-			{% for item in kwords %}
-				<li class="nav-item">
-				<a class="nav-link" href="{{ url_for('search', page=1, keywords=item) }}">{{ item }}</a>
-				</li>
-			{% endfor %}
-			</ul>
-		</div>
+			</script>
+		</div>		
 	</div>
 </div>
 {% endblock %}

@@ -1,4 +1,6 @@
 config.py
+Test_playground.ipynb
 ./__pycache__
 ./.vscode
 ./.ipynb_checkpoints
+__pycache__/

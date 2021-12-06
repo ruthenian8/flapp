@@ -1,4 +1,4 @@
-const host = "http://" + window.location.host;
+const host = "https://" + window.location.host;
 const selectParamsToEndpoint = {
 	"#yfield":{
 		"endpoint":"/api/yrs",
@@ -6,6 +6,10 @@ const selectParamsToEndpoint = {
 	},
 	"#inffield":{
 		"endpoint":"/api/infs",
+		"result":[]
+	},
+	"#sobfield":{
+		"endpoint":"/api/sobs",
 		"result":[]
 	},
 	"#qlfield":{
@@ -36,23 +40,41 @@ const selectParamsToEndpoint = {
 
 const childParamsToParent = {
 	"#qlfield": {
-		"endpoint":"/api/qlist/",
+		"endpoint":"api/quests",
 		"child":"#qfield",
 		"result":[]
 	},
 	"#rayfield": {
-		"endpoint":"/api/rvt/",
+		"endpoint":"api/rvt",
 		"child":"#VTfield",
 		"result":[]
 	}
 	// "#VIfield": {
-	// 	"endpoint":"/api/rvi/",
+	// 	"endpoint":"api/rvi",
 	// 	"parent":"#rayfield",
 	// 	"result":[]
 	// }
 }
 
+
+function applyKeywords() {
+	const kwfield = document.getElementById("kwfield");
+	kwfield.value = kwfield.dataset.selected == "0" ? "" : kwfield.dataset.selected;
+}
+
+function applySelected() {
+	for (let select of Array.from(document.getElementsByTagName("select"))) {
+		const val = select.dataset.selected;
+		if (Boolean(val)) {
+			select.value = val;
+		} else {
+			select.value = "0";
+		}
+	}
+}
+
 async function loadInitial(host) {
+	applyKeywords();
 	const urls = [];
 	for (let key in selectParamsToEndpoint) {
 		selectParamsToEndpoint[key]["promise"] = fetch(host + selectParamsToEndpoint[key]["endpoint"])
@@ -65,10 +87,11 @@ async function loadInitial(host) {
 	for (let key in selectParamsToEndpoint) {
 		setField(key, selectParamsToEndpoint[key]);
 	}
+	applySelected();
 }
 
 async function loadRelated(host, parameter, targetObj) {
-	let url = host + targetObj["endpoint"] + parameter;
+	let url = parameter == "0" ? [host, targetObj["endpoint"]].join("/") : [host, targetObj["endpoint"], parameter].join("/");
 	await fetch(url).catch(err => console.log(err)).then(res => res.json()).then(data => targetObj["result"] = data);
 	return targetObj;
 }
@@ -89,6 +112,7 @@ function setField(fieldId, entries) {
 			break;
 		case "#qlfield":
 		case "#inffield":
+		case "#sobfield":
 			targetField.append(`<option value="0">Не выбрано</option>`);
 			entries["result"].forEach((item) => {
 				let textOpt = Boolean(item["name"]) ? item["name"].slice(0,40) + "..." : "";
@@ -106,7 +130,7 @@ function setField(fieldId, entries) {
 			targetField.append(`<option value="0">Не выбрано</option>`);
 			entries["result"].forEach((item) => {
 				targetField.append(`<option value="${item["id"]}">${item["main"].slice(0,40)}</option>`)
-			})			
+			})
 			break;
 	}  // }  catch (err) { console.log(fieldId) }
 }

@@ -1,4 +1,3 @@
-import re
 from sqlalchemy.dialects.mysql import VARCHAR, YEAR, TINYTEXT, LONGTEXT
 from flask_login import LoginManager, UserMixin
 from flask_sqlalchemy import SQLAlchemy
@@ -46,10 +45,12 @@ class SearchSchema(Schema):
     questions = fields.Str()
     year = fields.Int()
     inf = fields.Int()
+    sob = fields.Int()
     ray = fields.Int()
     vill_txt = fields.Int()
     vill_inf = fields.Int()
     page = fields.Int(required=True)
+    download = fields.Str()
 
 class User(UserMixin, database.Model):
     __tablename__ = 'users'
@@ -139,13 +140,19 @@ inf_schema = InfSchema(many=True)
 class Collectors(database.Model):
     __tablename__ = "collectors"
     id = database.Column("id", database.Integer, primary_key=True, autoincrement=True)
-    main = database.Column("name", TINYTEXT)
+    name = database.Column("name", TINYTEXT)
     code = database.Column("code", VARCHAR(8))
     __repr__ = common_repr
+class SobSchema(Schema):
+    id = fields.Int(reqired=True)
+    name = fields.Str(required=True)
+    code = fields.Str(required=True)
+sob_schema = SobSchema(many=True)
 
 class Questions(database.Model):
     __tablename__ = "questions"
     id = database.Column("id", database.Integer, primary_key=True, autoincrement=True)
+    q_list = database.relationship("Question_lists", secondary="q2ql")
     q_num = database.Column("q_num", VARCHAR(5))
     q_let = database.Column("q_let", VARCHAR(3))
     q_txt = database.Column("q_txt", database.Text)
@@ -154,6 +161,7 @@ class Questions(database.Model):
         return json.dumps(dict(id=self.id, code=self.q_num+self.q_let, name=self.q_txt))
 class QuestSchema(Schema):
     id = fields.Int(required=True)
+    q_list = fields.Nested(lambda: QLSchema())
     q_num = fields.Str(required=True)
     q_let = fields.Str(required=True)
     q_txt = fields.Str(required=True)
@@ -192,7 +200,7 @@ class TextSchema(Schema):
     vill = fields.Nested(lambda: MainSchema())
     keyword = fields.List(fields.Nested(lambda: MainSchema()))
     informator = fields.List(fields.Nested(lambda: InfSchema()))
-    collector = fields.List(fields.Nested(lambda: MainSchema()))
+    collector = fields.List(fields.Nested(lambda: SobSchema()))
     question = fields.List(fields.Nested(lambda: QuestSchema()))
 text_schema = TextSchema()
 
@@ -287,4 +295,3 @@ class Question2ql(database.Model):
     main = FkColumn("q_id", "questions.id")
     refer = FkColumn("ql_id", "q_lists.id")
     __repr__ = rel_table_repr
-
