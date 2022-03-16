@@ -6,9 +6,9 @@
 	<div class="row">
 		<div class="col-sm-12 align-self-center" class="card">
 			<div id="maintext" class="card-body">
-				<h5 class="card-title">Запись № {{ id }}</h5>	
+				<h5 class="card-title">Запись № {{ id }}</h5>
 				<p id="textp" class="card-text">{{ text }}</p>
-			</div>			
+			</div>
 		</div>
 	</div>
 	<!-- row with meta info -->
@@ -22,14 +22,14 @@
 				</li>
 				<li class="nav-item">
 					<p id="infs" class="metatext">Информанты:<br />
-					{% for item in informs %}	
+					{% for item in informs %}
 					<a class="card-text" href="{{ url_for('search', page=1, inf=item.id) }}" title="{{ item.name }}">{{ item.code }}</a><br/>
 					{% endfor %}
 					</p>
 				</li>
 				<li class="nav-item">
 					<p id="infs" class="metatext">Собиратели:<br />
-					{% for item in sobs %}	
+					{% for item in sobs %}
 					<a class="card-text" href="{{ url_for('search', page=1, sob=item.id) }}" title="{{ item.name }}">{{ item.code }}</a><br/>
 					{% endfor %}
 					</p>
@@ -41,7 +41,7 @@
 						{% endfor %}
 					</p>
 				</li>
-			</ul>		
+			</ul>
 		</div>
 	</div>
 	<!-- row with question -->
@@ -49,12 +49,12 @@
 		<div class="col-sm-12 align-self-center" class="card">
 			<div id="question" class="metatext card-body">
 				<h6>Программа, вопрос</h6>
-				{% for item in question %}				
+				{% for item in question %}
 				<a class="card-text" href="{{ url_for('search', page=1, questions=item.id) }}">{{ item.q_list[0].code }} {{ item.q_num }}{{ item.q_let }} {{ item.q_txt }}</a><br/>
 				{% endfor %}
-			</div>		
-		</div>	
-	</div>	
+			</div>
+		</div>
+	</div>
 	<!-- row with keywords -->
 	<div class="row">
 		<div class="col-sm-12 align-self-center" class="card">
@@ -73,7 +73,14 @@
 			<script type="text/javascript">
 document.write(VK.Share.button(false,{type: "custom", text: "<img class=\"p-1\" src=\"https://vk.com/images/share_32.png\" width=\"32\" height=\"32\" />"}));
 			</script>
-		</div>		
+		</div>
+		<div class="col-sm-12 d-flex justify-content-center">
+            <article>
+                Материалы сайта доступны по лицензии
+                <a href="https://spdx.org/licenses/CC-BY-2.0.html">Creative&nbsp;Commons&nbsp;2.0</a>
+                , если не указана иная лицензия.
+            </article>
+		</div>
 	</div>
 </div>
 {% endblock %}
