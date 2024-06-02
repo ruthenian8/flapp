@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="row d-flex justify-content-center">
+	<!-- вертикальная регуляция -->
+	
+	<div class="col-11 p-1 bd-highlight gap-2" id="mainCol" style="margin: auto;">
+	    <h1 style="font-size: 1.2rem;">Ключевые слова</h1>
+	    <div class="d-flex justify-content-start flex-wrap">
+	    {% for key in kw_groups %}
+	    <div class="p-2 col-2">
+			<button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#{{ key }}" aria-expanded="false" aria-controls="{{ key }}">{{ key }}</button>
+			<br/>
+			<div class="collapse multi-collapse" id="{{ key }}">
+				<div class="card card-body">
+					{% for kw in kw_groups[key] %}
+						<a href="{{ url_for('search', page=1) }}&keywords={{ kw }}">{{ kw }}</a>
+					{% endfor %}
+				</div>
+			</div>
+	    </div>
+		{% endfor %}
+	    </div>
+    </div>
+</div>
+{% endblock %}

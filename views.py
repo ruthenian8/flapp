@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, Response, make_response, abort
 from flask import render_template, request, url_for, redirect, Markup
 from flask_login import login_user, logout_user, login_required
+
 # from flask_uploads import UploadSet, configure_uploads
 from flask_admin import Admin
 from sqlalchemy.orm.exc import NoResultFound
@@ -18,7 +19,7 @@ db_url = "mysql+pymysql://{}:{}@{}:{}/{}".format(
     CONFIG["PASSWORD"],
     CONFIG["HOST"],
     CONFIG["PORT"],
-    CONFIG["DATABASE"]
+    CONFIG["DATABASE"],
 )
 
 MAX_RESULT = 300
@@ -26,62 +27,63 @@ PER_PAGE = 30
 
 query_params = params
 
+
 def create_app():
-    app = Flask(__name__,
-        static_url_path='/static',
-        static_folder='static')
-    app.config["MAX_CONTENT_LENGTH"] = 40 * 1024 * 1024
-    app.config["APPLICATION_ROOT"] = ROOT_PATH
-    app.config["TEMPLATES_AUTO_RELOAD"] = True
-    app.config["FLASK_ADMIN_SWATCH"] = "cerulean"
-    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
-    app.config['SQLALCHEMY_POOL_RECYCLE'] = 280
-    app.config['SQLALCHEMY_POOL_TIMEOUT'] = 20
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["SQLALCHEMY_RECORD_QUERIES"] = False
-    app.config["SQLALCHEMY_MAX_OVERFLOW"] = 3
-    app.config["SECRET_KEY"] = SECRET
-    app.config["UPLOAD_FOLDER"] = "static"
-    app.secret_key = SECRET
-    database.app = app
-    database.init_app(app)
+    application = Flask(__name__, static_url_path="/static", static_folder="static")
+    application.config["MAX_CONTENT_LENGTH"] = 40 * 1024 * 1024
+    application.config["APPLICATION_ROOT"] = ROOT_PATH
+    application.config["TEMPLATES_AUTO_RELOAD"] = True
+    application.config["FLASK_ADMIN_SWATCH"] = "cerulean"
+    application.config["SQLALCHEMY_DATABASE_URI"] = db_url
+    application.config["SQLALCHEMY_POOL_RECYCLE"] = 280
+    application.config["SQLALCHEMY_POOL_TIMEOUT"] = 20
+    application.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    application.config["SQLALCHEMY_RECORD_QUERIES"] = False
+    application.config["SQLALCHEMY_MAX_OVERFLOW"] = 3
+    application.config["SECRET_KEY"] = SECRET
+    application.config["UPLOAD_FOLDER"] = "static"
+    application.secret_key = SECRET
+    database.app = application
+    database.init_app(application)
     admin = Admin(
-        app,
+        application,
         name="Редакторский раздел",
         template_mode="bootstrap3",
         index_view=IndexView(),
-        url="/admin"
+        url="/admin",
     )
     admin = admin_views(admin)
-    return app
+    return application
 
-cache = Cache(
-    config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 300}
-)
 
-app = create_app()
-login_manager.init_app(app)
-cache.init_app(app)
+cache = Cache(config={"CACHE_TYPE": "SimpleCache", "CACHE_DEFAULT_TIMEOUT": 300})
+
+application = create_app()
+login_manager.init_app(application)
+cache.init_app(application)
 
 #
-@app.after_request
+@application.after_request
 def after(response):
     # response.headers['Content-Security-Policy'] = "default-src 'self'; style-src 'unsafe-inline'"
-    response.headers['X-Content-Type-Options'] = "nosniff"
-    response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Cross-Origin-Resource-Policy']='same-origin'
-    response.headers['SameSite']='Lax'
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+    response.headers["SameSite"] = "Lax"
     return response
 
-@app.context_processor
+
+@application.context_processor
 def add_prefix():
     return dict(prefix=URL_PREFIX)
+
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-@app.route("/login", methods=['POST', 'GET'])
+
+@application.route("/login", methods=["POST", "GET"])
 def login():
     if request.form:
         username = request.form.get("username")
@@ -90,17 +92,21 @@ def login():
         if user:
             if check_password_hash(user.password, password):
                 login_user(user)
-                return render_template("login.html", message="Добро пожаловать, {}".format(username))
+                return render_template(
+                    "login.html", message="Добро пожаловать, {}".format(username)
+                )
         return render_template("login.html", message="Неверное имя или пароль")
     return render_template("login.html", message="")
 
-@app.route("/logout")
+
+@application.route("/logout")
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for("index"))
 
-@app.route('/user', methods=["POST", "GET"])
+
+@application.route("/user", methods=["POST", "GET"])
 @login_required
 def user():
     if request.form:
@@ -119,12 +125,14 @@ def user():
         return render_template("user.html")
     return render_template("user.html")
 
-def make_json_response(inp:list, schema:object=main_schema):
+
+def make_json_response(inp: list, schema: object = main_schema):
     response = make_response(schema.dumps(inp, many=True))
     response.headers["Content-Type"] = "application/json"
     return response
 
-def form_txt(texts:list, delim="="):
+
+def form_txt(texts: list, delim="="):
     text = f"Записей: {str(len(texts))}"
     for item in texts:
         text += """
@@ -141,17 +149,21 @@ ID: {}
             item.year[0].main,
             "; ".join([f"{vill.ray[0].main}, {vill.main}" for vill in item.vill]),
             "; ".join([inf.code for inf in item.informator]),
-            "; ".join([f"{q.q_list[0].code} {q.q_num}{q.q_let}" for q in item.question]),
-            item.text.replace("\r\n","\n"),
+            "; ".join(
+                [f"{q.q_list[0].code} {q.q_num}{q.q_let}" for q in item.question]
+            ),
+            item.text.replace("\r\n", "\n"),
             "; ".join([keyword.main for keyword in item.keyword]),
-            delim * 50
+            delim * 50,
         )
     response = Response(text, mimetype="text/txt")
-    response.headers['Content-Disposition'] = (
-        'attachment; filename="{}.txt"'.format("QueryResult"))
+    response.headers["Content-Disposition"] = 'attachment; filename="{}.txt"'.format(
+        "QueryResult"
+    )
     return response
 
-@app.route('/search/', methods=["GET"])
+
+@application.route("/search/", methods=["GET"])
 def search():
     context = params
     if not request.args:
@@ -180,26 +192,29 @@ def search():
     context = query_wrapper(database, True, **user_params)
     return render_template("search.html", context=context)
 
+
 apiMapping = {
-    "sobs":{"model":Collectors, "schema":sob_schema},
-    "yrs":{"model":Years, "schema":main_schema},
-    "infs":{"model":Informants, "schema":inf_schema},
-    "prs":{"model":Question_lists, "schema":ql_schema},
-    "quests":{"model":Questions, "schema":quest_schema, "related":Question2ql},
-    "rays":{"model":Rayons, "schema":main_schema},
-    "rvi":{"model":VillsInf, "schema":main_schema, "related":VI2ray},
-    "rvt":{"model":VillsTxt, "schema":main_schema, "related":Vill2ray},
-    "kws":{"model":Keywords, "schema":main_schema}
+    "sobs": {"model": Collectors, "schema": sob_schema},
+    "yrs": {"model": Years, "schema": main_schema},
+    "infs": {"model": Informants, "schema": inf_schema},
+    "prs": {"model": Question_lists, "schema": ql_schema},
+    "quests": {"model": Questions, "schema": quest_schema, "related": Question2ql},
+    "rays": {"model": Rayons, "schema": main_schema},
+    "rvi": {"model": VillsInf, "schema": main_schema, "related": VI2ray},
+    "rvt": {"model": VillsTxt, "schema": main_schema, "related": Vill2ray},
+    "kws": {"model": Keywords, "schema": main_schema},
 }
 
-@app.route("/api/<tabname>")
+
+@application.route("/api/<tabname>")
 @cache.cached(timeout=120)
 def apiGeneric(tabname):
     result = apiMapping[tabname]["model"].query.all()
     resp = make_json_response(result, apiMapping[tabname]["schema"])
     return resp
 
-@app.route("/api/<tabname>/<int:related>")
+
+@application.route("/api/<tabname>/<int:related>")
 @cache.cached(timeout=120)
 def apiGenericRelation(tabname, related):
     mainModel = apiMapping[tabname]["model"]
@@ -208,16 +223,20 @@ def apiGenericRelation(tabname, related):
         sub = database.session.query(rel.main).filter(rel.refer == related)
     except NoResultFound:
         abort(404)
-    result = database.session.query(mainModel).filter(mainModel.id.in_(sub.subquery())).all()
+    result = (
+        database.session.query(mainModel).filter(mainModel.id.in_(sub.subquery())).all()
+    )
     resp = make_json_response(result, apiMapping[tabname]["schema"])
     return resp
 
-@app.route("/gallery")
+
+@application.route("/gallery")
 def gallery():
     initial = Pics.query.paginate(per_page=8, page=1)
-    return render_template('gallery.html', imgs=initial)
+    return render_template("gallery.html", imgs=initial)
 
-@app.route("/api/pics")
+
+@application.route("/api/pics")
 def pics():
     try:
         arg = page_request_schema.load(request.args)
@@ -228,17 +247,18 @@ def pics():
     print(selected_page.items)
     response = {
         "pages": selected_page.pages,
-        "page_items": galschema.dump(selected_page.items, many=True)
+        "page_items": galschema.dump(selected_page.items, many=True),
     }
     return page_request_schema.dumps(response)
 
-@app.route("/text/<idx>")
+
+@application.route("/text/<idx>")
 def text(idx):
     text = Texts.query.filter_by(id=idx).one_or_none()
     if text is not None:
         context = {}
         context["id"] = text.id
-        context["text"] = Markup(text.text.replace("\r\n","<br/>"))
+        context["text"] = Markup(text.text.replace("\r\n", "<br/>"))
         context["year"] = dict(main=text.year[0].main, id=text.year[0].id)
         context["informs"] = text.informator
         context["sobs"] = text.collector
@@ -249,59 +269,80 @@ def text(idx):
     selected = params
     return render_template("search.html", **selected)
 
+
 #
 #
 #
 
-@app.route("/index")
+
+@application.route("/index")
+@cache.cached(timeout=1800)
 def index():
     all_ql = Question_lists.query.all()
     all_r = Rayons.query.all()
     context = dict(
-        villnum = database.session.query(VillsTxt).count() // 10 * 10,
-        infnum = database.session.query(Informants).count() // 100 * 100,
-        curyear = datetime.date.today().year,
-        qls = ql_schema.dump(all_ql, many=True),
-        rays = main_schema.dump(all_r, many=True)
+        villnum=database.session.query(VillsTxt).count() // 10 * 10,
+        infnum=database.session.query(Informants).count() // 100 * 100,
+        curyear=datetime.date.today().year,
+        qls=ql_schema.dump(all_ql, many=True),
+        rays=main_schema.dump(all_r, many=True),
     )
     return render_template("index.html", **context)
 
-@app.route("/")
+
+@application.route("/")
 def blank():
     return redirect(url_for("index"))
 
-@app.route("/help")
+
+@application.route("/help")
 def help_page():
     return render_template("help.html")
 
-@app.route("/about")
+
+@application.route("/about")
 def about_page():
     return render_template("about.html")
 
+
 #
 #
 #
 
-@app.route("/keywords")
-@login_required
+
+@application.route("/keywords")
 def keyword_page():
     kws = Keywords.query.order_by("keyword").all()
-    return render_template('keywords.html', keywords=kws)
+    kw_groups = dict()
+    for kw in kws:
+        letter = kw.main[0]
+        if letter not in kw_groups:
+            kw_groups[letter] = []
+        kw_groups[letter].append(kw.main)
+        
+    return render_template("keywords.html", kw_groups=kw_groups)
 
-@app.route("/collectors")
+
+@application.route("/collectors")
 @login_required
 def collector_page():
     collect = Collectors.query.order_by("name").all()
     return render_template("collectors.html", collectors=collect)
 
-@app.route("/files")
+
+@application.route("/files")
 @login_required
 def file_page():
     files = Files.query.all()
     return render_template("files.html", files=files)
 
-@app.route("/informants")
+
+@application.route("/informants")
 @login_required
 def informator_page():
     infs = Informants.query.order_by("name").all()
     return render_template("informants.html", informants=infs)
+
+
+if __name__ == "__main__":
+    application.run(host="0.0.0.0")

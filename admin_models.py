@@ -9,8 +9,10 @@ from flask import redirect, url_for
 from jinja2 import Markup
 from models import *
 
+
 class BaseView(ModelView):
     """Class for admin models"""
+
     page_size = 25
     can_export = True
     column_display_pk = True
@@ -25,18 +27,17 @@ class BaseView(ModelView):
     def inaccessible_callback(self, name, **kwargs):
         return login(url_for("login"))
 
+
 class UserView(BaseView):
     form_choices = {
         "role": [
             ("admin", "Администратор"),
             ("editor", "Редактор"),
-            ("user", "Пользователь")
+            ("user", "Пользователь"),
         ]
     }
 
-    form_extra_fields = {
-        "new_password": PasswordField("New Password")
-    }
+    form_extra_fields = {"new_password": PasswordField("New Password")}
     form_columns = ("username", "role", "email", "new_password")
     column_list = ("username", "role", "email")
 
@@ -53,6 +54,7 @@ class UserView(BaseView):
     def on_model_change(self, form, User, is_created=False):
         User.Password = form.new_password.data
 
+
 class EditorView(BaseView):
     def is_accessible(self):
         if not current_user.is_authenticated:
@@ -63,17 +65,49 @@ class EditorView(BaseView):
             self.can_edit = True
         return True
 
+
 def admin_views(admin):
     """Function that adds the administrator views"""
-    admin.add_view(UserView(User, database.session, category="Участники", name="Пользователи"))
-    admin.add_view(EditorView(Collectors, database.session, category="Участники", name="Собиратели"))
-    admin.add_view(EditorView(Informants, database.session, category="Участники", name="Информанты"))
-    admin.add_view(EditorView(Texts, database.session, category="Метаданные", name="Тексты"))
-    admin.add_view(EditorView(Keywords, database.session, category="Метаданные", name="Ключевые слова"))
-    admin.add_view(EditorView(Questions, database.session, category="Метаданные", name="Вопросы"))
-    admin.add_view(EditorView(VillsInf, database.session, category="Геоданные", name="Место жительства информанта"))
-    admin.add_view(EditorView(VillsTxt, database.session, category="Геоданные", name="Место записи текста"))
-    admin.add_view(EditorView(Rayons, database.session, category="Геоданные", name="Районы записи"))
+    admin.add_view(
+        UserView(User, database.session, category="Участники", name="Пользователи")
+    )
+    admin.add_view(
+        EditorView(
+            Collectors, database.session, category="Участники", name="Собиратели"
+        )
+    )
+    admin.add_view(
+        EditorView(
+            Informants, database.session, category="Участники", name="Информанты"
+        )
+    )
+    admin.add_view(
+        EditorView(Texts, database.session, category="Метаданные", name="Тексты")
+    )
+    admin.add_view(
+        EditorView(
+            Keywords, database.session, category="Метаданные", name="Ключевые слова"
+        )
+    )
+    admin.add_view(
+        EditorView(Questions, database.session, category="Метаданные", name="Вопросы")
+    )
+    admin.add_view(
+        EditorView(
+            VillsInf,
+            database.session,
+            category="Геоданные",
+            name="Место жительства информанта",
+        )
+    )
+    admin.add_view(
+        EditorView(
+            VillsTxt, database.session, category="Геоданные", name="Место записи текста"
+        )
+    )
+    admin.add_view(
+        EditorView(Rayons, database.session, category="Геоданные", name="Районы записи")
+    )
     admin.add_link(MenuLink(name="Вернуться на сайт", url="/"))
     return admin
 

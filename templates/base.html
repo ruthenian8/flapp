@@ -47,6 +47,7 @@
 	</style>
 </head>
 <body>
+    <p style="margin: 0; margin-bottom: 1px; text-align: center; border-bottom-width: 1px; border-color: black;" class="bg-light">Фольклорный архив лаборатории фольклористики РГГУ</p>
 	<nav class="navbar navbar-expand-lg navbar-light bg-light" style="margin-bottom: 2rem;">
 		<div class="container-fluid">
 			<!-- home button -->
@@ -63,6 +64,7 @@
 				<div class="navbar-nav">
 					<a class="nav-link" href="{{ url_for('search') }}">Поиск</a>
 					<!--<a class="nav-link" href="{{ url_for('gallery') }}">Галерея</a>-->
+					<a class="nav-link" href="{{ url_for('keyword_page') }}">Ключевые слова</a>
 					<a class="nav-link" href="{{ url_for('help_page') }}">Помощь</a>
 					<a class="nav-link" href="{{ url_for('about_page') }}">О сайте</a>
 				</div>
