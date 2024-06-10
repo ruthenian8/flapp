@@ -7,7 +7,9 @@
 		<div class="col-sm-12 align-self-center" class="card">
 			<div id="maintext" class="card-body">
 				<h5 class="card-title">Запись № {{ id }}</h5>	
-				<p id="textp" class="card-text">{{ text }}</p>
+				{% autoescape false %}
+				<p id="textp" class="card-text">{{ text | replace('\n', '<br/>') | safe }}</p>
+				{% endautoescape %}
 			</div>			
 		</div>
 	</div>
