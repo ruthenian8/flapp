@@ -21,7 +21,7 @@ class FkColumn(database.Column):
 
 def common_repr(self):
     """Representation for a non-relational table"""
-    return json.dumps(dict(id=self.id, main=self.main))
+    return json.dumps(dict(id=self.id, main=self.main), ensure_ascii=False)
 
 
 class MainSchema(Schema):
@@ -92,7 +92,7 @@ class Years(database.Model):
     main = database.Column("year", YEAR(4))
 
     def __repr__(self):
-        json.dumps(dict(id=self.id, main=str(self.main)))
+        json.dumps(dict(id=self.id, main=str(self.main)), ensure_ascii=False)
 
 
 class Keywords(database.Model):
@@ -141,7 +141,7 @@ class Informants(database.Model):
     vill = database.relationship("VillsInf", secondary="i2vi")
 
     def __repr__(self):
-        return json.dumps(dict(id=self.id, code=self.code, name=self.name))
+        return json.dumps(dict(id=self.id, code=self.code, name=self.name), ensure_ascii=False)
 
 
 class InfSchema(Schema):
@@ -158,7 +158,9 @@ class Collectors(database.Model):
     id = database.Column("id", database.Integer, primary_key=True, autoincrement=True)
     name = database.Column("name", TINYTEXT)
     code = database.Column("code", VARCHAR(8))
-    __repr__ = common_repr
+
+    def __repr__(self):
+        return json.dumps(dict(id=self.id, code=self.code, name=self.name), ensure_ascii=False)
 
 
 class SobSchema(Schema):
@@ -181,7 +183,7 @@ class Questions(database.Model):
 
     def __repr__(self):
         return json.dumps(
-            dict(id=self.id, code=self.q_num + self.q_let, name=self.q_txt)
+            dict(id=self.id, code=self.q_num + self.q_let, name=self.q_txt), ensure_ascii=False
         )
 
 
@@ -203,7 +205,7 @@ class Question_lists(database.Model):
     name = database.Column("name", VARCHAR(50))
 
     def __repr__(self):
-        return json.dumps(dict(id=self.id, code=self.code, name=self.name))
+        return json.dumps(dict(id=self.id, code=self.code, name=self.name), ensure_ascii=False)
 
 
 class QLSchema(Schema):
@@ -228,7 +230,7 @@ class Texts(database.Model):
     vill = database.relationship("VillsTxt", secondary="t2v")
 
     def __repr__(self):
-        return json.dumps(dict(id=self.id, main=self.text))
+        return json.dumps(dict(id=self.id, main=self.text[:100]), ensure_ascii=False)
 
 
 class TextSchema(Schema):

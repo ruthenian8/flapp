@@ -213,8 +213,10 @@
 				{% for item in context.found.items %}
 				<div class="card">
 					<div class="card-body">
+					    {% autoescape false %}
 						<p class="card-text"><h6 style="display:inline;">{{ loop.index }}</h6> {{ item.text|truncate(500, False) }}</p>
 						<a class="btn btn-primary" href="{{ url_for('text', idx=item.id) }}">Запись № {{ item.id }}</a>
+						{% endautoescape %}
 					</div>
 				</div>
 				{% endfor %}

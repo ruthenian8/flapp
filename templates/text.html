@@ -25,14 +25,14 @@
 				<li class="nav-item">
 					<p id="infs" class="metatext">Информанты:<br />
 					{% for item in informs %}	
-					<a class="card-text" href="{{ url_for('search', page=1, inf=item.id) }}" title="{{ item.name }}">{{ item.code }}</a><br/>
+					<a class="card-text" href="{{ url_for('search', page=1, inf=item.id) }}" title="{{ item.code }}">{{ item.code }}</a><br/>
 					{% endfor %}
 					</p>
 				</li>
 				<li class="nav-item">
 					<p id="infs" class="metatext">Собиратели:<br />
 					{% for item in sobs %}	
-					<a class="card-text" href="{{ url_for('search', page=1, sob=item.id) }}" title="{{ item.name }}">{{ item.code }}</a><br/>
+					<a class="card-text" href="{{ url_for('search', page=1, sob=item.id) }}" title="{{ item.code }}">{{ item.code }}</a><br/>
 					{% endfor %}
 					</p>
 				</li>

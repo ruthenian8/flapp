@@ -1,7 +1,7 @@
 import os
 import flask_admin as flask_admin
 from flask_admin import expose
-from wtforms.fields import PasswordField
+from wtforms.fields import PasswordField, TextAreaField
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.base import MenuLink
 from flask_login import current_user
@@ -52,7 +52,7 @@ class UserView(BaseView):
         return True
 
     def on_model_change(self, form, User, is_created=False):
-        User.Password = form.new_password.data
+        User.password = form.new_password.data
 
 
 class EditorView(BaseView):
@@ -64,6 +64,12 @@ class EditorView(BaseView):
             self.can_create = True
             self.can_edit = True
         return True
+
+
+class TextView(EditorView):
+    form_excluded_columns = ['year']
+    column_searchable_list = ("id",)
+    form_extra_fields = {"text": TextAreaField(render_kw={"rows":10})}
 
 
 def admin_views(admin):
@@ -82,7 +88,7 @@ def admin_views(admin):
         )
     )
     admin.add_view(
-        EditorView(Texts, database.session, category="Метаданные", name="Тексты")
+        TextView(Texts, database.session, category="Тексты", name="Тексты")
     )
     admin.add_view(
         EditorView(

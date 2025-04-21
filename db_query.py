@@ -1,4 +1,4 @@
-from sqlalchemy import and_, not_
+from sqlalchemy import and_, not_, text
 from sqlalchemy.sql.elements import FunctionFilter
 from models import *
 import pickle
@@ -13,7 +13,7 @@ def unpickle_index(idx_name="byteindex"):
     return index
 
 
-lunr_index = unpickle_index("byteindex")
+lunr_index = None
 
 nonedict = {"", " ", "-", None}
 params = {
@@ -110,11 +110,19 @@ def _(inp, db: object, model: object):
     return ids
 
 
+def indices_mysql(inp: str, db: object):
+    query_str = "SELECT text_id, text, MATCH (text,keywords) AGAINST (:inp IN NATURAL LANGUAGE MODE) AS score FROM t_keywords GROUP BY text_id HAVING score > 0"
+    statement = text(query_str).bindparams(inp=inp).compile(compile_kwargs={"literal_binds": True})
+    result = db.engine.execute(statement)
+    return [int(item["text_id"]) for item in result]
+
+
 def filter_by_ft(inp: str, db: object, model: object = None) -> list:
     new_query = termsToQuery([i for i in inp.split() if len(i) > 2])
     if len(new_query) == 0:
         return []
-    l_indices, _ = indices_lunr(new_query, lunr_index)
+    # l_indices, _ = indices_lunr(new_query, lunr_index)
+    l_indices = indices_mysql(inp, db)
     return l_indices
 
 

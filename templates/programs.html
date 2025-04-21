@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<!-- горизонтальная регуляция -->
+<style type="text/css">
+	.card, .list-group-item {
+		background-color: transparent;
+	}
+</style>
+<div class="row d-flex justify-content-center">
+	<!-- вертикальная регуляция -->
+	<div class="col-8 p-1 bd-highlight d-grid gap-1" id="mainCol" style="margin: auto;">
+		<div class="card">
+			<div class="card-body">
+				<h6 class="card-title">Опросники:</h6>
+			</div>
+			<ul class="list-group list-group-flush card-text">
+				{% for qlist in qlists %}
+				<!-- filter false entry -->
+				{% if loop.index != 39 %}
+				<li class="list-group-item"><a 
+				type="button" data-bs-toggle="collapse" data-bs-target="#q{{ qlist.id }}" aria-expanded="false" aria-controls="q{{ qlist.id }}"
+				>{{ qlist.name }}</a></li>
+				<br/>
+			  <div class="collapse multi-collapse" id="q{{ qlist.id }}">
+				  <div class="card-body">
+					  {% for question in questions[qlist.id] %}
+					  {% if question.q_txt %}
+					  {% if (question.q_let == 'а' or question.q_let == '') %}{{ question.q_num }}{% endif %}
+						  {{ question.q_let }} <a href="{{ url_for('search', page=1) }}&q_list={{ qlist.id }}&questions={{ question.id }}">{{ question.q_txt }}</a><br/>
+						{% endif %}
+					  {% endfor %}
+				  </div>
+			  </div>
+				{% endif %}
+				{% endfor %}
+			</ul>
+		</div>
+	</div>
+</div>
+{% endblock %}

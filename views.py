@@ -92,9 +92,7 @@ def login():
         if user:
             if check_password_hash(user.password, password):
                 login_user(user)
-                return render_template(
-                    "login.html", message="Добро пожаловать, {}".format(username)
-                )
+                return redirect("/admin")
         return render_template("login.html", message="Неверное имя или пароль")
     return render_template("login.html", message="")
 
@@ -321,6 +319,19 @@ def keyword_page():
         kw_groups[letter].append(kw.main)
         
     return render_template("keywords.html", kw_groups=kw_groups)
+
+@application.route("/programs")
+def program_page():
+    questions = Questions.query.all()
+    question_lists = Question_lists.query.order_by("id").all()
+    
+    question_groups = dict()
+    for question in questions:
+        if question.q_list and question.q_list[0].id not in question_groups:
+            question_groups[question.q_list[0].id] = []
+        question_groups[question.q_list[0].id].append(question)
+    
+    return render_template("programs.html", questions=question_groups, qlists=question_lists)
 
 
 @application.route("/collectors")

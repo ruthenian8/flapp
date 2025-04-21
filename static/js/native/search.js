@@ -114,7 +114,7 @@ function setField(fieldId, entries) {
 		case "#inffield":
 		case "#sobfield":
 			targetField.append(`<option value="0">Не выбрано</option>`);
-			entries["result"].forEach((item) => {
+			entries["result"].sort((x, y) => ('' + x.code).localeCompare(y.code)).forEach((item) => {
 				let textOpt = Boolean(item["name"]) ? item["name"].slice(0,40) + "..." : "";
 				targetField.append(`<option value="${item["id"]}">${item["code"] + " " + textOpt}</option>`)
 			})
@@ -128,7 +128,7 @@ function setField(fieldId, entries) {
 			break;
 		default:
 			targetField.append(`<option value="0">Не выбрано</option>`);
-			entries["result"].forEach((item) => {
+			entries["result"].sort((x, y) => Number(x.main) - Number(y.main)).forEach((item) => {
 				targetField.append(`<option value="${item["id"]}">${item["main"].slice(0,40)}</option>`)
 			})
 			break;
