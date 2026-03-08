@@ -67,7 +67,7 @@ class EditorView(BaseView):
 
 
 class TextView(EditorView):
-    form_excluded_columns = ['year']
+    """form_excluded_columns = ['year']"""
     column_searchable_list = ("id",)
     form_extra_fields = {"text": TextAreaField(render_kw={"rows":10})}
 

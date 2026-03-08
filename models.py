@@ -90,9 +90,7 @@ class Years(database.Model):
     __tablename__ = "years"
     id = database.Column("id", database.Integer, primary_key=True, autoincrement=True)
     main = database.Column("year", YEAR(4))
-
-    def __repr__(self):
-        json.dumps(dict(id=self.id, main=str(self.main)), ensure_ascii=False)
+    __repr__ = common_repr
 
 
 class Keywords(database.Model):
