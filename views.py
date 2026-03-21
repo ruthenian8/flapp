@@ -26,6 +26,13 @@ MAX_RESULT = 300
 PER_PAGE = 30
 
 query_params = params
+ACCENTS = {
+    'А́': 'А', 'Е́': 'Е', 'И́': 'И', 'О́': 'О', 'У́': 'У', 'Ы́': 'Ы',
+    'Э́': 'Э', 'Ю́': 'Ю', 'Я́': 'Я', 'Ё': 'Ё',
+    'а́': 'а', 'е́': 'е', 'и́': 'и', 'о́': 'о', 'у́': 'у',
+    'ы́': 'ы', 'э́': 'э', 'ю́': 'ю', 'я́': 'я', 'ё': 'ё'}
+
+get_accents = {item[1] + '\\': item[0] for item in ACCENTS.items()}
 
 
 def create_app():
@@ -76,6 +83,15 @@ def after(response):
 @application.context_processor
 def add_prefix():
     return dict(prefix=URL_PREFIX)
+
+
+@application.template_filter('prettify')
+def prettify_text(text, html_br=False):
+    for i in get_accents:
+        if i in text:
+            text = text.replace(i, get_accents[i])
+    text = text.replace('у%', 'ў').replace('У%', 'Ў').replace('_', '̄').replace("\r\n", "<br/>")
+    return text
 
 
 @login_manager.user_loader
@@ -256,7 +272,7 @@ def text(idx):
     if text is not None:
         context = {}
         context["id"] = text.id
-        context["text"] = Markup(text.text.replace("\r\n", "<br/>"))
+        context["text"] = Markup(prettify_text(text.text))
         context["year"] = dict(main=text.year[0].main, id=text.year[0].id)
         context["informs"] = text.informator
         context["sobs"] = text.collector
