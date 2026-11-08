@@ -220,6 +220,7 @@
 					</div>
 				</div>
 				{% endfor %}
+				{% if current_user.is_authenticated %}
 				<div class="card">
 					<div class="card-body">
 					<a class="btn btn-primary" href="{{ url_for('search', page=context.found.page, download='True') }}
@@ -230,6 +231,7 @@
 					{% endfor %}">Скачать подкорпус</a>
 					</div>
 				</div>
+				{% endif %}
 				<nav aria-label="Search navigation">
 					<ul class="pagination justify-content-center">
 						<li class="page-item disabled"><strong class="page-link">Записей: {{ context.found.total }}</strong></li>

@@ -199,6 +199,8 @@ ID: {}
 
 @application.route("/search/", methods=["GET"])
 def search():
+    if request.args.get("download") == "True" and not current_user.is_authenticated:
+        abort(403)
     context = params
     if not request.args:
         return render_template("search.html", context=context)
