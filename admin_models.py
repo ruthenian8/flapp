@@ -1,11 +1,13 @@
 import os
 import flask_admin as flask_admin
-from flask_admin import expose
+from flask_admin import expose, BaseView as AdminBaseView
 from wtforms.fields import PasswordField, TextAreaField
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.base import MenuLink
 from flask_login import current_user
-from flask import redirect, url_for
+from flask import redirect, url_for, request, abort
+from csv_import.upload import parse_uploads, UploadImporter
+from csv_import import import_sources, issue
 from jinja2 import Markup
 from models import *
 
@@ -20,12 +22,10 @@ class BaseView(ModelView):
     def is_accessible(self):
         if not current_user.is_authenticated:
             return False
-        elif current_user.has_roles("user"):
-            return False
-        return True
+        return current_user.role in ("admin", "editor")
 
     def inaccessible_callback(self, name, **kwargs):
-        return login(url_for("login"))
+        return redirect(url_for("login"))
 
 
 class UserView(BaseView):
@@ -52,7 +52,10 @@ class UserView(BaseView):
         return True
 
     def on_model_change(self, form, User, is_created=False):
-        User.password = form.new_password.data
+        if form.new_password.data:
+            User.password = form.new_password.data
+        elif is_created:
+            raise ValueError("A password is required for new users")
 
 
 class EditorView(BaseView):
@@ -70,6 +73,33 @@ class TextView(EditorView):
     """form_excluded_columns = ['year']"""
     column_searchable_list = ("id",)
     form_extra_fields = {"text": TextAreaField(render_kw={"rows":10})}
+
+
+class CSVUploadView(AdminBaseView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.role == "admin"
+
+    def inaccessible_callback(self, name, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for("login"))
+        abort(403)
+
+    @expose('/', methods=('GET', 'POST'))
+    def index(self):
+        errors = []
+        status = None
+        if request.method == 'POST':
+            sources = parse_uploads(request.files, errors)
+            try:
+                status = import_sources(database.engine, sources, errors, 'commit', importer_class=UploadImporter)
+            except Exception as exc:
+                database.session.rollback()
+                issue(errors, 'database', None, 'transaction', None,
+                      str(getattr(exc, 'orig', exc)))
+                status = 'rolled_back'
+            if errors:
+                status = 'rolled_back'
+        return self.render('admin/csv_upload.html', errors=errors, status=status)
 
 
 def admin_views(admin):
@@ -114,6 +144,7 @@ def admin_views(admin):
     admin.add_view(
         EditorView(Rayons, database.session, category="Геоданные", name="Районы записи")
     )
+    admin.add_view(CSVUploadView(name="Импорт CSV", endpoint="csv_upload"))
     admin.add_link(MenuLink(name="Вернуться на сайт", url="/"))
     return admin
 

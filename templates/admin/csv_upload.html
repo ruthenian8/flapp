@@ -1,0 +1,18 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+<h2>Импорт CSV</h2>
+<p>Выберите три файла в кодировке UTF-8. Разделитель определяется по заголовку. При ошибках изменения не сохраняются.</p>
+<form method="POST" enctype="multipart/form-data">
+  <div class="form-group"><label for="collectors">Собиратели</label><input id="collectors" name="collectors" type="file" accept=".csv,text/csv" required></div>
+  <div class="form-group"><label for="informants">Информанты</label><input id="informants" name="informants" type="file" accept=".csv,text/csv" required></div>
+  <div class="form-group"><label for="cards">Карточки</label><input id="cards" name="cards" type="file" accept=".csv,text/csv" required></div>
+  <button class="btn btn-primary" type="submit">Импортировать</button>
+</form>
+{% if status == 'committed' %}<div class="alert alert-success">Импорт завершён, изменения сохранены.</div>{% endif %}
+{% if errors %}
+<div class="alert alert-danger">Найдено ошибок: {{ errors|length }}. Изменения отменены.</div>
+<div class="table-responsive"><table class="table table-striped table-bordered"><thead><tr><th>Файл</th><th>Строка</th><th>Поле</th><th>Значение</th><th>Ошибка</th></tr></thead><tbody>
+{% for error in errors %}<tr><td>{{ error.file }}</td><td>{{ error.row if error.row is not none else '—' }}</td><td>{{ error.field }}</td><td style="white-space:pre-wrap; overflow-wrap:anywhere">{{ error.value if error.value is not none else '—' }}</td><td>{{ error.message }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% endif %}
+{% endblock %}

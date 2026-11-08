@@ -1,9 +1,12 @@
 import datetime
+import hmac
+import re
+import secrets
 from marshmallow.exceptions import ValidationError
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, Response, make_response, abort
+from flask import Flask, Response, make_response, abort, session
 from flask import render_template, request, url_for, redirect, Markup
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 
 # from flask_uploads import UploadSet, configure_uploads
 from flask_admin import Admin
@@ -47,6 +50,8 @@ def create_app():
     application.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     application.config["SQLALCHEMY_RECORD_QUERIES"] = False
     application.config["SQLALCHEMY_MAX_OVERFLOW"] = 3
+    application.config["SESSION_COOKIE_HTTPONLY"] = True
+    application.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     application.config["SECRET_KEY"] = SECRET
     application.config["UPLOAD_FOLDER"] = "static"
     application.secret_key = SECRET
@@ -69,9 +74,26 @@ application = create_app()
 login_manager.init_app(application)
 cache.init_app(application)
 
+@application.before_request
+def protect_state_changes():
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        expected = session.get("csrf_token", "")
+        supplied = request.form.get("csrf_token", "") or request.headers.get("X-CSRF-Token", "")
+        if not expected or not hmac.compare_digest(expected, supplied):
+            abort(400, "Invalid CSRF token")
+
+
 #
 @application.after_request
 def after(response):
+    if response.mimetype == "text/html" and not response.direct_passthrough:
+        body = response.get_data(as_text=True)
+        if re.search(r'<form\b[^>]*\bmethod\s*=\s*["\']?post\b', body, re.I):
+            token = session.setdefault("csrf_token", secrets.token_urlsafe(32))
+            body = re.sub(r'(<form\b[^>]*\bmethod\s*=\s*["\']?post\b[^>]*>)',
+                          lambda m: m.group(1) + '<input type="hidden" name="csrf_token" value="' + token + '">',
+                          body, flags=re.I)
+            response.set_data(body)
     # response.headers['Content-Security-Policy'] = "default-src 'self'; style-src 'unsafe-inline'"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-XSS-Protection"] = "1; mode=block"
@@ -125,17 +147,15 @@ def logout():
 def user():
     if request.form:
         user_id = request.form.get("id")
-        password = generate_password_hash(request.form.get("password"))
-        email = request.form.get("email")
-        username = request.form.get("username")
-        if User.query.filter_by(id=user_id).one_or_none():
-            current_user = User.query.filter_by(id=user_id).one()
-            current_user.username = username
-            current_user.password = password
-            current_user.email = email
-            database.session.flush()
-            database.session.refresh(current_user)
-            database.session.commit()
+        if user_id != str(current_user.id):
+            abort(403)
+        password = request.form.get("password")
+        if not password:
+            abort(400)
+        current_user.username = request.form.get("username")
+        current_user.password = password  # model listener hashes it
+        current_user.email = request.form.get("email")
+        database.session.commit()
         return render_template("user.html")
     return render_template("user.html")
 
@@ -179,6 +199,8 @@ ID: {}
 
 @application.route("/search/", methods=["GET"])
 def search():
+    if request.args.get("download") == "True" and not current_user.is_authenticated:
+        abort(403)
     context = params
     if not request.args:
         return render_template("search.html", context=context)
@@ -223,6 +245,8 @@ apiMapping = {
 @application.route("/api/<tabname>")
 @cache.cached(timeout=120)
 def apiGeneric(tabname):
+    if tabname not in apiMapping:
+        abort(404)
     result = apiMapping[tabname]["model"].query.all()
     resp = make_json_response(result, apiMapping[tabname]["schema"])
     return resp
@@ -231,6 +255,8 @@ def apiGeneric(tabname):
 @application.route("/api/<tabname>/<int:related>")
 @cache.cached(timeout=120)
 def apiGenericRelation(tabname, related):
+    if tabname not in apiMapping or "related" not in apiMapping[tabname]:
+        abort(404)
     mainModel = apiMapping[tabname]["model"]
     rel = apiMapping[tabname]["related"]
     try:
@@ -272,7 +298,7 @@ def text(idx):
     if text is not None:
         context = {}
         context["id"] = text.id
-        context["text"] = Markup(prettify_text(text.text))
+        context["text"] = prettify_text(Markup.escape(text.text))
         context["year"] = dict(main=text.year[0].main, id=text.year[0].id)
         context["informs"] = text.informator
         context["sobs"] = text.collector
@@ -343,9 +369,8 @@ def program_page():
     
     question_groups = dict()
     for question in questions:
-        if question.q_list and question.q_list[0].id not in question_groups:
-            question_groups[question.q_list[0].id] = []
-        question_groups[question.q_list[0].id].append(question)
+        if question.q_list:
+            question_groups.setdefault(question.q_list[0].id, []).append(question)
     
     return render_template("programs.html", questions=question_groups, qlists=question_lists)
 
