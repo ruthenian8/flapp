@@ -20,12 +20,10 @@ class BaseView(ModelView):
     def is_accessible(self):
         if not current_user.is_authenticated:
             return False
-        elif current_user.has_roles("user"):
-            return False
-        return True
+        return current_user.role in ("admin", "editor")
 
     def inaccessible_callback(self, name, **kwargs):
-        return login(url_for("login"))
+        return redirect(url_for("login"))
 
 
 class UserView(BaseView):
@@ -52,7 +50,10 @@ class UserView(BaseView):
         return True
 
     def on_model_change(self, form, User, is_created=False):
-        User.password = form.new_password.data
+        if form.new_password.data:
+            User.password = form.new_password.data
+        elif is_created:
+            raise ValueError("A password is required for new users")
 
 
 class EditorView(BaseView):
