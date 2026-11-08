@@ -37,7 +37,8 @@ class UserView(BaseView):
         ]
     }
 
-    form_extra_fields = {"new_password": PasswordField("New Password")}
+    form_extra_fields = {"new_password": PasswordField("Новый пароль", description="При редактировании оставьте пустым, чтобы сохранить текущий пароль.")}
+    column_labels = {"username": "Имя пользователя", "role": "Роль", "email": "Электронная почта", "new_password": "Новый пароль"}
     form_columns = ("username", "role", "email", "new_password")
     column_list = ("username", "role", "email")
 
@@ -69,10 +70,65 @@ class EditorView(BaseView):
         return True
 
 
+def label_main(item):
+    return item.main or "—"
+
+
+def label_person(item):
+    return "{} — {}".format(item.code or "—", item.name or "—")
+
+
+def label_question(item):
+    return "{}{} — {}".format(item.q_num or "", item.q_let or "", item.q_txt or "")
+
+
+class CollectorView(EditorView):
+    column_labels = {"name": "ФИО собирателя", "code": "Код собирателя"}
+    form_columns = ("name", "code")
+
+
+class InformantView(EditorView):
+    column_labels = {"name": "ФИО информанта", "code": "Код информанта", "bio": "Биография", "vill": "Место жительства"}
+    form_columns = ("name", "code", "bio", "vill")
+    form_overrides = {"bio": TextAreaField}
+    form_widget_args = {"bio": {"rows": 6}}
+    form_args = {"vill": {"get_label": label_main}}
+
+
 class TextView(EditorView):
-    """form_excluded_columns = ['year']"""
     column_searchable_list = ("id",)
-    form_extra_fields = {"text": TextAreaField(render_kw={"rows":10})}
+    column_labels = {"text": "Текст записи", "keyword": "Ключевые слова", "year": "Год записи", "informator": "Информанты", "collector": "Собиратели", "file": "Файлы", "question": "Вопросы", "vill": "Место записи"}
+    form_columns = ("text", "year", "vill", "informator", "collector", "keyword", "question", "file")
+    form_overrides = {"text": TextAreaField}
+    form_widget_args = {"text": {"rows": 16}}
+    form_args = {"year": {"get_label": label_main}, "vill": {"get_label": label_main},
+                 "informator": {"get_label": label_person}, "collector": {"get_label": label_person},
+                 "keyword": {"get_label": label_main}, "question": {"get_label": label_question},
+                 "file": {"get_label": label_main}}
+
+
+class KeywordView(EditorView):
+    column_labels = {"main": "Ключевое слово"}
+    form_columns = ("main",)
+
+
+class QuestionView(EditorView):
+    column_labels = {"q_list": "Программы", "q_num": "Номер вопроса", "q_let": "Буква", "q_txt": "Текст вопроса", "q_theme": "Тема"}
+    form_columns = ("q_list", "q_num", "q_let", "q_txt", "q_theme")
+    form_overrides = {"q_txt": TextAreaField, "q_theme": TextAreaField}
+    form_widget_args = {"q_txt": {"rows": 6}, "q_theme": {"rows": 4}}
+    form_args = {"q_list": {"get_label": lambda item: "{} — {}".format(item.code or "—", item.name or "—")}}
+
+
+class VillageView(EditorView):
+    column_labels = {"main": "Название населённого пункта", "ray": "Районы"}
+    form_columns = ("main", "ray")
+    form_args = {"ray": {"get_label": label_main}}
+
+
+class RayonView(EditorView):
+    column_labels = {"main": "Название района"}
+    form_columns = ("main",)
 
 
 class CSVUploadView(AdminBaseView):
@@ -108,12 +164,12 @@ def admin_views(admin):
         UserView(User, database.session, category="Участники", name="Пользователи")
     )
     admin.add_view(
-        EditorView(
+        CollectorView(
             Collectors, database.session, category="Участники", name="Собиратели"
         )
     )
     admin.add_view(
-        EditorView(
+        InformantView(
             Informants, database.session, category="Участники", name="Информанты"
         )
     )
@@ -121,15 +177,15 @@ def admin_views(admin):
         TextView(Texts, database.session, category="Тексты", name="Тексты")
     )
     admin.add_view(
-        EditorView(
+        KeywordView(
             Keywords, database.session, category="Метаданные", name="Ключевые слова"
         )
     )
     admin.add_view(
-        EditorView(Questions, database.session, category="Метаданные", name="Вопросы")
+        QuestionView(Questions, database.session, category="Метаданные", name="Вопросы")
     )
     admin.add_view(
-        EditorView(
+        VillageView(
             VillsInf,
             database.session,
             category="Геоданные",
@@ -137,12 +193,12 @@ def admin_views(admin):
         )
     )
     admin.add_view(
-        EditorView(
+        VillageView(
             VillsTxt, database.session, category="Геоданные", name="Место записи текста"
         )
     )
     admin.add_view(
-        EditorView(Rayons, database.session, category="Геоданные", name="Районы записи")
+        RayonView(Rayons, database.session, category="Геоданные", name="Районы записи")
     )
     admin.add_view(CSVUploadView(name="Импорт CSV", endpoint="csv_upload"))
     admin.add_link(MenuLink(name="Вернуться на сайт", url="/"))
@@ -154,4 +210,4 @@ class IndexView(flask_admin.AdminIndexView):
     def index(self):
         if not current_user.is_authenticated:
             return redirect(url_for("login"))
-        return super(IndexView, self).index()
+        return self.render("admin/home.html")

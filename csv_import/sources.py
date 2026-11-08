@@ -4,9 +4,9 @@ import hashlib
 import io
 
 FILES = {
-    'plesetski-tblSobirately.csv': ('Код собирателя', 'ФИО собирателя'),
-    'plesetski-tblInformators.csv': ('инициалы', 'ФИО', 'биография', 'село'),
-    'plesetski-tblCards.csv': ('текст', 'программа', 'вопрос', 'год', 'ключевые слова', 'село')
+    'tblSobirately.csv': ('Код собирателя', 'ФИО собирателя'),
+    'tblInformators.csv': ('инициалы', 'ФИО', 'биография', 'село'),
+    'tblCards.csv': ('текст', 'программа', 'вопрос', 'год', 'ключевые слова', 'село')
     + tuple('собиратель%d' % i for i in range(1, 5))
     + tuple('информант%d' % i for i in range(1, 5)),
 }
