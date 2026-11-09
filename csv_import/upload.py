@@ -1,6 +1,7 @@
 """Parse the three admin CSV uploads for the transactional importer."""
 import csv
 import io
+import re
 from collections import defaultdict
 from sqlalchemy import select
 from . import FILES, Importer, issue, records
@@ -67,6 +68,7 @@ def parse_uploads(files, errors):
 class UploadImporter(Importer):
     """Resolve uploaded people without conflating informants sharing a code."""
     def prepare_people(self):
+        self.years_to_insert = {}
         self.upload_codes = {'collectors': defaultdict(list), 'informators': defaultdict(list)}
         collectors = self.tables['collectors']
         existing = defaultdict(list)
@@ -114,6 +116,20 @@ class UploadImporter(Importer):
                     self.validate_values('vills_inf', {'v_name': row['село']}, (filename, line, 'село'))
 
     def resolve(self, table, columns, values, location):
+        if table == 'years' and columns == ['year']:
+            year = values[0].strip()
+            if not re.fullmatch(r'[0-9]{4}', year) or not 1901 <= int(year) <= 2155:
+                issue(self.errors, *location, values[0], 'Год должен быть четырёхзначным числом от 1901 до 2155')
+                return None
+            matches = self.index('years', ['year']).get((year,), [])
+            if len(matches) > 1:
+                issue(self.errors, *location, year, 'В базе найдено несколько записей для этого года')
+                return None
+            if matches:
+                return matches[0]
+            marker = ('years', year)
+            self.years_to_insert.setdefault(year, location)
+            return marker
         if table not in ('informators', 'collectors') or columns != ['code']:
             return super().resolve(table, columns, values, location)
         code = values[0].strip()
@@ -125,6 +141,18 @@ class UploadImporter(Importer):
                   '%s %s code: %d matches' % ('Unknown or ambiguous', table, len(matches)))
             return None
         return matches[0]
+
+    def write(self):
+        for year, location in self.years_to_insert.items():
+            self.attempt(location[0], location[1], lambda year=year: self.add_year(year))
+        super().write()
+
+    def add_year(self, year):
+        table = self.tables['years']
+        matches = list(self.db.execute(select([table.c.id]).where(table.c.year == int(year))))
+        if len(matches) > 1:
+            raise ValueError('В базе найдено несколько записей для года ' + year)
+        self.people[('years', year)] = matches[0][0] if matches else self.insert('years', {'year': int(year)})
 
     def add_person(self, table, values):
         key = ((table, values['code'], values['name']) if table == 'collectors'
