@@ -13,6 +13,11 @@ login_manager = LoginManager()
 class FkColumn(database.Column):
     """Easier creation for a foreign key column"""
 
+    @property
+    def _constructor(self):
+        # SQLAlchemy copies columns using the standard Column constructor.
+        return database.Column
+
     def __init__(self, colname: str, refers: str):
         super(FkColumn, self).__init__(
             colname, database.Integer, database.ForeignKey(refers)

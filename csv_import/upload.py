@@ -5,6 +5,7 @@ import re
 from collections import defaultdict
 from sqlalchemy import select
 from . import FILES, Importer, issue, records
+from .sources import detect_delimiter
 
 KINDS = {
     'collectors': 'tblSobirately.csv',
@@ -22,29 +23,16 @@ def parse_uploads(files, errors):
             continue
         try:
             content = upload.stream.read().decode('utf-8-sig')
-            header_line = content.splitlines()[0] if content else ''
-            # Inspect only the header; quoted delimiters are handled by csv.reader.
-            candidates = []
             required = next(columns for filename, columns in FILES.items() if filename.endswith(name))
-            for delimiter in (',', ';', '\t', '|'):
-                header = next(csv.reader([header_line], delimiter=delimiter, strict=True), [])
-                score = len(set(header).intersection(required))
-                if len(header) > 1:
-                    candidates.append((score, delimiter))
-            if not candidates or max(score for score, _ in candidates) == 0:
-                raise ValueError('Не удалось определить разделитель по заголовку')
-            best = max(score for score, _ in candidates)
-            matches = [d for score, d in candidates if score == best]
-            if len(matches) != 1:
-                raise ValueError('Неоднозначный разделитель в заголовке')
-            reader = csv.reader(io.StringIO(content, newline=''), delimiter=matches[0], strict=True)
-            header = next(reader, [])
+            delimiter = detect_delimiter(content, required)
+            reader = csv.reader(io.StringIO(content, newline=''), delimiter=delimiter, strict=True)
+            header = [col.lower() for col in next(reader, [])]
             records = []
             sources[name] = {'header': header, 'records': records}
             if not header or len(header) != len(set(header)):
                 issue(errors, name, 1, 'header', header, 'Пустые или повторяющиеся имена столбцов')
             for col in required:
-                if col not in header:
+                if col.lower() not in header:
                     issue(errors, name, 1, col, None, 'Обязательный столбец отсутствует')
             while True:
                 line = reader.line_num + 1
@@ -54,7 +42,7 @@ def parse_uploads(files, errors):
                     break
                 if len(values) == len(header):
                     for i, col in enumerate(header):
-                        if col in ('Код собирателя', 'ФИО собирателя', 'инициалы', 'ФИО') or col in tuple('собиратель%d' % n for n in range(1, 5)) + tuple('информант%d' % n for n in range(1, 5)):
+                        if col in ('код собирателя', 'фио собирателя', 'инициалы', 'фио') or col in tuple('собиратель%d' % n for n in range(1, 5)) + tuple('информант%d' % n for n in range(1, 5)):
                             values[i] = values[i].strip()
                 records.append({'line': line, 'values': values})
                 if len(values) != len(header):
@@ -78,8 +66,8 @@ class UploadImporter(Importer):
             existing[(code, name)].append(identity)
             self.collector_codes[code].append(identity)
         for filename, table, code_field, name_field in (
-            ('tblSobirately.csv', 'collectors', 'Код собирателя', 'ФИО собирателя'),
-            ('tblInformators.csv', 'informators', 'инициалы', 'ФИО'),
+            ('tblSobirately.csv', 'collectors', 'код собирателя', 'фио собирателя'),
+            ('tblInformators.csv', 'informators', 'инициалы', 'фио'),
         ):
             source_pairs = {}
             for line, row in records(self.sources, filename):

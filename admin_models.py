@@ -114,6 +114,13 @@ class KeywordView(EditorView):
 
 class QuestionView(EditorView):
     column_labels = {"q_list": "Программы", "q_num": "Номер вопроса", "q_let": "Буква", "q_txt": "Текст вопроса", "q_theme": "Тема"}
+    column_list = ("q_list", "q_num", "q_let", "q_txt", "q_theme")
+    column_formatters = {
+        "q_list": lambda view, context, model, name: "; ".join(
+            "{} — {}".format(item.code or "—", item.name or "—")
+            for item in model.q_list
+        ) or "—"
+    }
     form_columns = ("q_list", "q_num", "q_let", "q_txt", "q_theme")
     form_overrides = {"q_txt": TextAreaField, "q_theme": TextAreaField}
     form_widget_args = {"q_txt": {"rows": 6}, "q_theme": {"rows": 4}}
