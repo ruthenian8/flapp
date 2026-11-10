@@ -53,8 +53,8 @@ class Importer:
 
     def prepare_people(self):
         for filename, table, code_field, name_field in (
-            ('tblSobirately.csv', 'collectors', 'Код собирателя', 'ФИО собирателя'),
-            ('tblInformators.csv', 'informators', 'инициалы', 'ФИО'),
+            ('tblSobirately.csv', 'collectors', 'код собирателя', 'фио собирателя'),
+            ('tblInformators.csv', 'informators', 'инициалы', 'фио'),
         ):
             index = self.index(table, ['code'])
             seen = set()
