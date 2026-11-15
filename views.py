@@ -16,6 +16,7 @@ from admin_models import admin_views, IndexView
 from config import CONFIG, ROOT_PATH, SECRET, URL_PREFIX
 from db_query import query_wrapper, params
 from flask_caching import Cache
+from flask_babel import Babel
 
 db_url = "mysql+pymysql://{}:{}@{}:{}/{}".format(
     CONFIG["USER"],
@@ -40,6 +41,8 @@ get_accents = {item[1] + '\\': item[0] for item in ACCENTS.items()}
 
 def create_app():
     application = Flask(__name__, static_url_path="/static", static_folder="static")
+    application.config["BABEL_DEFAULT_LOCALE"] = "ru"
+    Babel(application)
     application.config["MAX_CONTENT_LENGTH"] = 40 * 1024 * 1024
     application.config["APPLICATION_ROOT"] = ROOT_PATH
     application.config["TEMPLATES_AUTO_RELOAD"] = True

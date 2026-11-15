@@ -5,9 +5,10 @@ from wtforms.fields import PasswordField, TextAreaField
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.base import MenuLink
 from flask_login import current_user
-from flask import redirect, url_for, request, abort
+from flask import redirect, url_for, request, abort, current_app
 from csv_import.upload import parse_uploads, UploadImporter
 from csv_import import import_sources, issue
+from csv_import.messages import russian_upload_errors
 from jinja2 import Markup
 from models import *
 
@@ -162,6 +163,10 @@ class CSVUploadView(AdminBaseView):
                 status = 'rolled_back'
             if errors:
                 status = 'rolled_back'
+                for error in errors:
+                    if error.get('field') in ('database', 'transaction'):
+                        current_app.logger.error('CSV import database error: %s', error['message'])
+                errors = russian_upload_errors(errors)
         return self.render('admin/csv_upload.html', errors=errors, status=status)
 
 
