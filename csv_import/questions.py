@@ -1,42 +1,35 @@
 """Question reference parsing."""
 import re
 
-
 def parse_questions(value):
-    """Parse numbered modifiers and standalone «доп.» without guessing ambiguity."""
+    """Parse only explicit numbers, letters, and доп.; never delete unknown tokens."""
     tokens = re.findall(r'\d+|[^\W\d_]+|[^\s]', value, re.UNICODE)
     result = []
     number = None
-    has_modifier = False
-    previous_modifier = False
-    separated = True
+    has_letter = False
     problems = []
     for token in tokens:
         if token.isdecimal():
-            if number is not None and not has_modifier:
+            if number is not None and not has_letter:
                 result.append((number, ''))
-            number, has_modifier = str(int(token)), False
-            previous_modifier, separated = False, True
-        elif token in (',', ';'):
-            separated = True
-        elif token == '.':
-            # A full stop may be the abbreviation in «доп.»; it does not
-            # disambiguate consecutive modifiers.
+            number, has_letter = str(int(token)), False
+        elif token in (',', '.', ';'):
             continue
-        elif token == 'доп' or (len(token) == 1 and token.isalpha()):
-            if previous_modifier and not separated:
-                problems.append('Adjacent question modifiers require disambiguation in the source: %r' % value)
-            if token == 'доп' and number is None:
+        elif token == 'доп':
+            if number is None:
                 result.append(('доп', ''))
-            elif number is None:
+            else:
+                result.append((number, ''))
+                number, has_letter = None, False
+        elif len(token) == 1 and token.isalpha():
+            if number is None:
                 problems.append('Letter %r has no question number' % token)
             else:
                 result.append((number, token.replace('a', 'а')))
-                has_modifier = True
-            previous_modifier, separated = True, False
+                has_letter = True
         else:
             problems.append('Unsupported question token %r' % token)
-    if number is not None and not has_modifier:
+    if number is not None and not has_letter:
         result.append((number, ''))
     if value.strip() and not result:
         problems.append('No question references could be parsed')
