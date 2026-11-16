@@ -152,10 +152,15 @@ class CSVUploadView(AdminBaseView):
     def index(self):
         errors = []
         status = None
+        action = None
         if request.method == 'POST':
+            action = request.form.get('action', 'validate')
+            if action not in ('validate', 'import'):
+                abort(400)
             sources = parse_uploads(request.files, errors)
             try:
-                status = import_sources(database.engine, sources, errors, 'commit', importer_class=UploadImporter)
+                mode = 'dry-run' if action == 'validate' else 'commit'
+                status = import_sources(database.engine, sources, errors, mode, importer_class=UploadImporter)
             except Exception as exc:
                 database.session.rollback()
                 issue(errors, 'database', None, 'transaction', None,
@@ -167,7 +172,7 @@ class CSVUploadView(AdminBaseView):
                     if error.get('field') in ('database', 'transaction'):
                         current_app.logger.error('CSV import database error: %s', error['message'])
                 errors = russian_upload_errors(errors)
-        return self.render('admin/csv_upload.html', errors=errors, status=status)
+        return self.render('admin/csv_upload.html', errors=errors, status=status, action=action)
 
 
 def admin_views(admin):

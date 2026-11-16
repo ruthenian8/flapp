@@ -5,7 +5,7 @@ import re
 from collections import defaultdict
 from sqlalchemy import select
 from . import FILES, Importer, issue, records
-from .sources import detect_delimiter
+from .sources import detect_delimiter, normalize_header
 
 KINDS = {
     'collectors': 'tblSobirately.csv',
@@ -26,7 +26,7 @@ def parse_uploads(files, errors):
             required = next(columns for filename, columns in FILES.items() if filename.endswith(name))
             delimiter = detect_delimiter(content, required)
             reader = csv.reader(io.StringIO(content, newline=''), delimiter=delimiter, strict=True)
-            header = [col.lower() for col in next(reader, [])]
+            header = [normalize_header(col, name) for col in next(reader, [])]
             records = []
             sources[name] = {'header': header, 'records': records}
             if not header or len(header) != len(set(header)):
