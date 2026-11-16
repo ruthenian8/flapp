@@ -2,8 +2,8 @@
 {% block body %}
 <h2>Импорт CSV</h2>
 <ol>
-  <li>Выберите три CSV-файла в кодировке UTF-8 и нажмите «Импортировать». Разделитель определяется по заголовку.</li>
-  <li>Система проверит данные и связи. Если ошибок нет, изменения сохранятся.</li>
+  <li>Выберите три CSV-файла в кодировке UTF-8. Разделитель определяется по заголовку.</li>
+  <li>Нажмите «Проверить», чтобы проверить данные без сохранения, или «Импортировать», чтобы проверить и сохранить их.</li>
   <li>При ошибках все изменения отменяются. Исправьте данные по списку ошибок и загрузите файлы снова.</li>
 </ol>
 <h3>Требования к данным</h3>
@@ -19,8 +19,10 @@
   <div class="form-group"><label for="collectors">Собиратели</label><input id="collectors" name="collectors" type="file" accept=".csv,text/csv" required></div>
   <div class="form-group"><label for="informants">Информанты</label><input id="informants" name="informants" type="file" accept=".csv,text/csv" required></div>
   <div class="form-group"><label for="cards">Карточки</label><input id="cards" name="cards" type="file" accept=".csv,text/csv" required></div>
-  <button class="btn btn-primary" type="submit">Импортировать</button>
+  <button class="btn btn-default" type="submit" name="action" value="validate">Проверить</button>
+  <button class="btn btn-primary" type="submit" name="action" value="import">Импортировать</button>
 </form>
+{% if action == 'validate' and status == 'rolled_back' and not errors %}<div class="alert alert-success">Проверка завершена успешно. Данные не сохранены.</div>{% endif %}
 {% if status == 'committed' %}<div class="alert alert-success">Импорт завершён, изменения сохранены.</div>{% endif %}
 {% if errors %}
 <div class="alert alert-danger">Найдено ошибок: {{ errors|length }}. Изменения отменены.</div>
